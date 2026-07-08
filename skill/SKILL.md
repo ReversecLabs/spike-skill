@@ -22,8 +22,10 @@ Determine what the user needs and read the corresponding file:
 |---|---|
 | Install spikee, set up a workspace, configure LLM providers | `01-workspace-setup.md` |
 | Write a custom target to bridge spikee to their application | `02-custom-targets.md` |
+| Implement advanced target auth (Azure, GCP, Auth0, JWT) or transport (WebSocket, tRPC) | `02b-advanced-targets.md` |
 | Generate or customise attack datasets (seeds, plugins) | `03-dataset-generation.md` |
 | Run tests, configure attacks, judges, and runtime options | `04-testing.md` |
+| Configure a custom GOAT attack via questionnaire | `04b-goat-attack.md` |
 | Analyse results, extract findings, iterate on testing | `05-results-analysis.md` |
 
 If the user's request spans multiple phases, work through them in order.

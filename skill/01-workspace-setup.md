@@ -2,44 +2,17 @@
 
 ## 1.1 Install Spikee
 
-Before installing anything, check the current environment:
-
-**Step 1: Check if spikee is already available.**
-```bash
-spikee --help
-```
-If this works, spikee is already installed — skip to **1.2**.
-
-**Step 2: Check for an existing virtual environment.**
-Look in the current directory and parent directories for common venv folders:
-```bash
-ls -d env/ venv/ .venv/ 2>/dev/null
-```
-If found, activate it and re-check:
-```bash
-source env/bin/activate   # or venv/bin/activate, .venv/bin/activate
-spikee --help
-```
-If spikee is now available, skip to **1.2**.
-
-**Step 3: Check if the current directory looks like a spikee workspace.**
-A spikee workspace has `datasets/`, `targets/`, `results/` directories and a `.env` file. If these exist, a previous user may have set up here — look for a venv before creating a new one.
-
-**Step 4: Install spikee.**
-The preferred approach is to create a virtual environment and install spikee into it:
+1. **Check if spikee is installed:** `spikee --help`
+2. **Check for existing venv:** `ls -d env/ venv/ .venv/ 2>/dev/null`. If found, activate it and re-check `spikee --help`.
+3. **Workspace check:** Look for `datasets/`, `targets/`, `results/`, and `.env`.
+4. **Install spikee (preferred via venv):**
 ```bash
 python3 -m venv env
 source env/bin/activate
 pip install "spikee[all]"
 ```
 
-> `spikee[all]` includes all LLM provider extras (Bedrock, Azure, Ollama, Groq, Google). If the user only needs specific providers, install selectively:
-> ```bash
-> pip install spikee                          # OpenAI-compatible only
-> pip install "spikee[bedrock,ollama]"        # Specific providers
-> ```
-
-If the user prefers not to use a virtual environment or already has a Python environment they want to use, `pip install "spikee[all]"` works directly — but a venv is strongly recommended to avoid dependency conflicts.
+*Note: `spikee[all]` installs all provider extras. For specific providers: `pip install "spikee[bedrock,ollama]"`*
 
 ## 1.2 Initialize a Workspace
 
@@ -64,13 +37,7 @@ workspace/
 
 ## 1.3 Configure LLM Providers
 
-In a typical pentest engagement, the target under test is an **application** — not a raw LLM endpoint. LLM providers in spikee are used to power **supporting features**, not the target itself:
-
-- **LLM judges** — evaluate whether an attack response indicates success (e.g., `llm_judge_harmful`, `llm_judge_objective`)
-- **LLM-powered attacks** — generate adaptive payloads at runtime (e.g., `crescendo`, `llm_jailbreaker`)
-- **LLM-powered plugins** — transform payloads using an LLM during dataset generation (e.g., `best_of_n`)
-
-Ask the user: **Are you planning to use any LLM-based judges, attacks, or plugins?** If so, find out which LLM provider they want to use for these. This determines which extras are needed:
+LLM providers are used for supporting features (LLM judges, dynamic attacks, LLM plugins), not the target itself. Determine if the user plans to use these features. If yes, install the necessary extra and update `.env`.
 
 | Provider | Install extra | Env vars needed in `.env` |
 |---|---|---|
@@ -113,22 +80,14 @@ spikee list providers
 
 ### Version Consistency Check
 
-The skill bundles spikee source code and documentation in `spikee-src/`. Verify that the **installed** spikee version matches the **bundled** source version:
+Ensure the **installed** spikee version matches the **bundled** source version in `spikee-src/`:
 
 ```bash
-# Get installed version
 python3 -c "import spikee; print(spikee.__version__)"
-
-# Get source version from the submodule
 grep '__version__' spikee-src/spikee/__init__.py
 ```
 
-If these versions differ, **warn the user**: the documentation and source code in this skill may not match the installed runtime. The templates, APIs, and options described in the phase files reflect the version in `spikee-src/`. A version mismatch could mean:
-- A base class signature has changed
-- New options exist that aren't documented here (or vice versa)
-- Built-in modules have been added or removed
-
-To resolve: either update the installed package (`pip install --upgrade spikee`) or update the submodule (`cd spikee-src && git pull origin main`).
+If versions differ, **warn the user**. The documentation/source in `spikee-src/` dictates the APIs and options for this skill. Fix by updating the package (`pip install --upgrade spikee`) or the submodule (`cd spikee-src && git pull origin main`).
 
 ## 1.5 What's Next?
 

@@ -5,19 +5,20 @@ After running `spikee test`, analyse the results to understand your target's vul
 ## 5.1 Analyse Results
 
 ```bash
-# Analyse a single results file
+# Analyse a single file (console output)
 spikee results analyze --result-file results/results_my_target_cybersec-2026-01_*.jsonl
 
 # Analyse all results in a folder
 spikee results analyze --result-folder results/
 
-# Only show overview statistics (skip breakdowns)
+# Output as HTML report
+spikee results analyze --result-file results/results_*.jsonl --output-format html
+
+# Only show overview statistics
 spikee results analyze --result-file results/results_*.jsonl --overview
 
-# Combine multiple result files into one analysis
-spikee results analyze --result-file results/results_run1_*.jsonl \
-                       --result-file results/results_run2_*.jsonl \
-                       --combine
+# Combine multiple result files
+spikee results analyze --result-file results/run1.jsonl --result-file results/run2.jsonl --combine
 ```
 
 ## 5.2 Understanding the Output
@@ -43,13 +44,7 @@ spikee results analyze --result-file results/results_run1_*.jsonl \
 
 ### Breakdown Tables
 
-Results are broken down by:
-- **Jailbreak Type** — which jailbreak templates are most effective?
-- **Instruction Type** — which attack goals succeed most often?
-- **Plugin** — do encoding transforms help bypass defences?
-- **Language** — is the target more vulnerable in certain languages?
-
-Sort by success rate to quickly identify the most effective attack vectors.
+Results are broken down by **Jailbreak Type**, **Instruction Type**, **Plugin**, and **Language**. Sort by success rate to identify effective attack vectors.
 
 ## 5.3 Extract Specific Results
 

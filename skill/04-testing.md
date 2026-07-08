@@ -5,18 +5,16 @@ Run attack datasets against your target using `spikee test`.
 ## 4.1 Basic Test Command
 
 ```bash
-spikee test --dataset datasets/cybersec-2026-01-*.jsonl \
+spikee test --dataset "datasets/cybersec-2026-01-*.jsonl" \
             --target my_app_target
 ```
 
-Key flags:
-```bash
---dataset <file>           # Path to dataset JSONL (supports glob)
---dataset-folder <dir>     # Process all datasets in a folder
---target <name>            # Target module name (without .py)
---target-options <string>  # Options to pass to the target
---tag <string>             # Tag for the results filename
-```
+**Key flags:**
+- `--dataset <file>`: Path to dataset JSONL. **Supports glob patterns** (e.g., `datasets/*.jsonl`) — remember to quote the glob so the shell doesn't expand it prematurely if passing multiple files.
+- `--dataset-folder <dir>`: Process all datasets in a folder.
+- `--target <name>`: Target module name (without `.py`).
+- `--target-options <string>`: Options to pass to the target (e.g., `provider/model`).
+- `--tag <string>`: Tag for the results filename.
 
 ## 4.2 Using the Built-In LLM Target
 
@@ -50,25 +48,22 @@ spikee test --dataset datasets/my-dataset.jsonl \
 
 Every dataset entry has a `judge_name` field that determines how Spikee evaluates whether an attack succeeded.
 
-### Built-In Basic Judges (no LLM needed)
+### Built-In Basic Judges (No LLM required)
 
-| Judge | How it works |
-|---|---|
-| `canary` | Checks if `judge_args` string appears in the response (case-insensitive) |
-| `regex` | Checks if `judge_args` regex pattern matches the response |
+- `canary`: Checks if `judge_args` string appears in the response (case-insensitive).
+- `regex`: Checks if `judge_args` regex pattern matches the response.
 
-These are set in the dataset seed's `instructions.jsonl` — you typically don't change them at test time.
+*Note: These judges run locally and do **not** require `--judge-options`.*
 
-### LLM Judges (need `--judge-options`)
+### LLM Judges (Requires `--judge-options`)
 
-| Judge | Use case |
-|---|---|
-| `llm_judge_harmful` | Does the response contain harmful content? |
-| `llm_judge_objective` | Did the response achieve the objective specified in `judge_args`? |
-| `llm_judge_output_criteria` | Does the response meet custom criteria in `judge_args`? |
-| `llm_judge_output_only` | Like output_criteria but only sees the response (not the prompt) |
+- `llm_judge_harmful`: Evaluates for harmful content.
+- `llm_judge_objective`: Evaluates if the specific objective in `judge_args` was achieved.
+- `llm_judge_output_criteria`: Evaluates custom criteria from `judge_args`.
+- `llm_judge_output_only`: Like output_criteria but only sees the response (not the prompt).
 
-LLM judges require a provider:
+*Note: These judges require an LLM to perform semantic evaluation. You **must** provide the `--judge-options` flag.*
+
 ```bash
 spikee test --dataset datasets/my-dataset.jsonl \
             --target my_target \
@@ -143,6 +138,7 @@ spikee test --dataset datasets/my-dataset.jsonl \
 > List available attacks: `spikee list attacks -d`
 > Read `spikee-src/docs/08_dynamic_attacks.md` for full attack documentation.
 > Read `spikee-src/spikee/templates/attack.py` for the attack base class.
+> **Advanced:** To configure a custom GOAT (Generative Offensive Adversarial Toolkit) attack with specific guardrail mapping, refer to **`04b-goat-attack.md`**.
 
 ### Attack-Only Mode
 
@@ -156,14 +152,12 @@ spikee test --dataset datasets/my-dataset.jsonl \
 
 ## 4.5 Runtime Parameters
 
-```bash
---threads 4              # Parallel threads (default: 4)
---attempts 3             # Retry attempts per entry (default: 1)
---max-retries 3          # Retries for 429/transient errors (default: 3)
---throttle 1.0           # Seconds to wait between requests per thread
---sample 0.15            # Sample 15% of dataset
---sample-seed 42         # Seed for reproducible sampling (default: 42, or "random")
-```
+- `--threads <n>`: Parallel threads (default: 4)
+- `--attempts <n>`: Retry attempts per entry (default: 1)
+- `--max-retries <n>`: Retries for 429/transient errors (default: 3)
+- `--throttle <seconds>`: Wait time between requests per thread
+- `--sample <percentage>`: Sample percentage of dataset (e.g., `0.15` for 15%)
+- `--sample-seed <n>`: Seed for reproducible sampling (default: 42, or "random")
 
 ## 4.6 Resume and Re-run
 

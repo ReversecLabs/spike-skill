@@ -2,13 +2,35 @@
 
 A **Target** is a Python script that bridges Spikee to the application under test. It receives a prompt from Spikee and returns the application's response.
 
-## 2.1 Do You Need a Custom Target?
+## 2.1 Information-Gathering
+
+**Always ask for a captured HTTP request + response first** (Burp Suite / DevTools). It answers most questions below in one step.
+
+> "Can you paste a captured HTTP request and response?"
+
+If not available, ask:
+
+| # | Question | Drives |
+|---|---|---|
+| 1 | Single-turn (each message independent) or multi-turn (conversation history)? | Base class |
+| 2 | HTTP REST, WebSocket, or both? | Transport pattern |
+| 3 | Where in the response body is the reply text? | Response parsing |
+| 4 | How does it authenticate? (API key / cookie / OAuth2 / IMDS / GCP ADC / JWT) | Auth pattern |
+| 5 | Session/thread/conversation ID — how is a new one created? | Multi-turn session management |
+| 6 | Any non-standard headers? (`X-Project-Id`, `Auth0-Client`, `x-*`, `Origin`, etc.) | Request headers |
+| 7 | How does it signal a block? (HTTP status, JSON flag, specific reply string) | `GuardrailTrigger` |
+| 8 | Runtime variants to test? (model, env, guardrail on/off) | `target_options` |
+| 9 | Route through intercepting proxy? | `proxy=` option |
+
+> **Advanced Targets:** If the application requires complex authentication (Azure IMDS, GCP ADC, Auth0, JWT) or non-standard transport (WebSockets, tRPC, Multipart), refer to **`02b-advanced-targets.md`**.
+
+## 2.2 Do You Need a Custom Target?
 
 | Scenario | Target to use |
 |---|---|
-| Testing a raw LLM endpoint (OpenAI, Bedrock, Ollama, etc.) | Use built-in `llm_provider` — no custom code needed |
+| Testing a raw LLM endpoint (OpenAI, Bedrock, Ollama) | Use built-in `llm_provider` (no custom code needed) |
 | Testing an LLM-powered application (chatbot, RAG, agent) | Write a **custom target** |
-| Testing a guardrail or content filter | Write a **guardrail target** (boolean return) |
+| Testing a guardrail or content filter | Write a **guardrail target** (returns boolean) |
 
 **Using the built-in `llm_provider`:**
 ```bash
@@ -17,9 +39,7 @@ spikee test --dataset datasets/my-dataset.jsonl \
             --target-options "openai/gpt-4o-mini"
 ```
 
-If that's sufficient, skip to Phase 3. Otherwise, continue below.
-
-## 2.2 Single-Turn Target (Most Common)
+## 2.3 Single-Turn Target (Most Common)
 
 Create a file in `targets/` in your workspace. Extend the `Target` base class.
 
@@ -71,12 +91,22 @@ class MyAppTarget(Target):
             Exception: For fatal errors — Spikee logs and moves on.
         """
         # Parse options if needed
-        url = "https://my-app.com/api/chat"
-        if target_options == "staging":
-            url = "https://staging.my-app.com/api/chat"
+        from spikee.utilities.modules import parse_options
+        opts = parse_options(target_options)
+        url = opts.get("url", "https://my-app.com/api/chat")
+        
+        # Proxy handling for Burp Suite
+        proxy_host = opts.get("proxy")
+        proxies = {"http": f"http://{proxy_host}", "https": f"http://{proxy_host}"} if proxy_host else {}
 
         try:
-            response = requests.post(url, json={"message": str(input_text)}, timeout=30)
+            response = requests.post(
+                url, 
+                json={"message": str(input_text)}, 
+                proxies=proxies, 
+                verify=not bool(proxy_host),
+                timeout=30
+            )
             response.raise_for_status()
             return response.json()["reply"]
 
@@ -104,7 +134,7 @@ spikee test --dataset datasets/my-dataset.jsonl --target my_app_target
 spikee test --dataset datasets/my-dataset.jsonl --target my_app_target --target-options staging
 ```
 
-## 2.3 Multi-Turn Target
+## 2.4 Multi-Turn Target
 
 For applications that maintain conversation state (chatbots, agents). Spikee provides two base classes:
 
@@ -178,7 +208,7 @@ For applications with server-side session management (e.g., the app tracks conve
 
 The key difference: you must manage mapping between Spikee's `spikee_session_id` and your application's session identifier.
 
-## 2.4 Guardrail Target
+## 2.5 Guardrail Target
 
 For testing guardrails and content filters. Return `True` if the prompt was **allowed** (bypassed), `False` if **blocked**.
 
@@ -210,7 +240,7 @@ class MyGuardrailTarget(Target):
 
 > For the full guardrail testing workflow (attack + benign datasets, false positive analysis), see Phase 5 and read `spikee-src/docs/10_guardrail_testing.md`.
 
-## 2.5 Target Options Parsing
+## 2.6 Target Options Parsing
 
 For complex options, use `parse_options` from spikee utilities:
 
@@ -226,7 +256,7 @@ def process_input(self, input_text, system_message=None, target_options=None):
 
 Usage: `spikee test --target my_target --target-options "url=https://api.example.com,model=gpt-4o"`
 
-## 2.6 Error Handling Summary
+## 2.7 Error Handling Summary
 
 | Situation | What to do |
 |---|---|
@@ -236,6 +266,6 @@ Usage: `spikee test --target my_target --target-options "url=https://api.example
 | Fatal error | Raise any `Exception` — Spikee logs it and continues |
 | Guardrail boolean | Return `True` (allowed) or `False` (blocked) |
 
-## 2.7 Next Step
+## 2.8 Next Step
 
 Once your target works standalone (`python targets/my_target.py`), proceed to **Phase 3** to generate a dataset.
