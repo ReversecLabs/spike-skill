@@ -1,6 +1,6 @@
 # Spikee Skill for AI Coding Agents
 
-An AI agent skill that guides pentesters through LLM application security testing with [Spikee](https://github.com/ReversecLabs/spikee) — from workspace setup, through custom target creation, dataset generation, test execution with dynamic attacks, to results analysis.
+An AI agent skill that guides security testers through LLM application security testing with [Spikee](https://github.com/ReversecLabs/spikee) — from workspace setup, through custom target creation, dataset generation, test execution with dynamic attacks, to results analysis.
 
 ## What This Skill Does
 
