@@ -2,6 +2,23 @@
 
 After running `spikee test`, analyse the results to understand your target's vulnerability profile.
 
+Base Spikee findings and metrics only on Spikee result artifacts. The assistant's own direct interactions are not test evidence. If the user explicitly requested a manual or out-of-band deviation, analyse and report it separately with its method and limits; do not combine it with Spikee results or success rates.
+
+> **Workspace memory:** Read `spikee.log` first to locate the intended result files and prior decisions, then verify those paths and statuses before relying on them.
+
+## Analysis Gate and Workflow Routing
+
+Analyse the small static baseline before recommending a full or dynamic run. First verify that target responses are valid, judges executed as intended, errors are acceptably low, and the sample represents the relevant dataset categories. Do not treat an error-heavy or poorly covered run as evidence of safety or vulnerability.
+
+When the gate fails, fix the cause and repeat the small baseline:
+
+- **Phase 1:** wrong workspace, virtual environment, or Spikee installation.
+- **Phase 2:** target integration, authentication, response shape, or single-/multi-turn behaviour.
+- **Phase 3:** missing coverage, unsuitable entries, or incorrect/ambiguous judge definitions.
+- **Phase 4:** provider access, timeouts, rate limits, concurrency, retries, or test parameters.
+
+Only after the baseline is trustworthy should you compare vulnerability rates, scale the static run, or consider a compatible dynamic attack.
+
 ## 5.1 Analyse Results
 
 ```bash
@@ -74,9 +91,11 @@ spikee results extract --result-file results/results_*.jsonl \
                        --custom-search "!jailbreak_type:no-jailbreak"
 ```
 
-## 5.4 Re-Judge Results
+## 5.4 Re-Judge Results — Explicit User Choice Only
 
 Re-evaluate existing results with a different judge or LLM model without re-running the test:
+
+Do not re-judge automatically. Run this only after the user explicitly chooses re-judging and the judge provider/model. State why it is proposed and label the resulting analysis with the chosen evaluation configuration. If LLM access is missing or unclear, stop and offer supported hosted-provider or local-endpoint setup options; do not substitute `regex`, `canary`, or a custom judge, and do not rewrite the dataset to make re-judging run.
 
 ```bash
 # Re-judge with a different LLM
@@ -169,12 +188,18 @@ Based on results, decide next steps:
 
 | Observation | Action |
 |---|---|
-| Low success rate across all categories | Try dynamic attacks (`--attack crescendo`), different plugins, or more diverse seeds |
+| Low success rate across all categories | First validate judge behaviour and coverage. If the baseline is sound and adaptive testing fits the user's goal, return to Phase 4 and propose a compatible dynamic attack with explicit limits |
 | High success for specific jailbreak types | The target is vulnerable to that bypass technique — report it |
 | High success for specific instruction types | The target doesn't defend against those goals — prioritise remediation |
-| Encoding plugins increase success | The target doesn't handle encoded inputs — test more encoding variants |
+| Encoding plugins increase success | The target doesn't handle encoded inputs — return to Phase 3, add agreed encoding plugins, regenerate the dataset, and rerun it through `spikee test` |
 | Dynamic attacks significantly improve success | Static defences are present but can be bypassed with persistence |
-| Many errors | Check target implementation, rate limits, or connectivity |
-| Many guardrail triggers | The guardrail is working — test with more advanced attacks or check false positive rate |
+| Missing or unrepresentative categories | Return to Phase 3 and correct dataset coverage, then repeat the small baseline |
+| Judge access or judge meaning is unresolved | Stop. Confirm the intended judge in Phase 3 and configure the user-chosen provider/endpoint in Phase 4; never substitute a simpler judge to continue |
+| Malformed, empty, or unexpected target responses, or target-application authentication failures | Return to Phase 2 and fix the target contract or target authentication |
+| Judge/attack-provider authentication failures | Return to Phase 4 to configure the chosen provider; return to Phase 3 as well if the provider or judge choice itself is unresolved |
+| Many timeouts, rate-limit responses, or request errors | Identify whether they came from the target, judge/attack provider, or test runner; route to Phase 2 or 4 accordingly before drawing conclusions |
+| Many guardrail triggers | Run the false-positive workflow and verify benign coverage before concluding that the guardrail is effective |
+
+After analysis, update the `spikee.log` summary and add a concise analysis/decision entry containing only durable conclusions, material errors or coverage gaps, the result/report path, the user's decision, and the next phase/gate. Do not duplicate detailed evidence already stored in results.
 
 > For complete results documentation, read `spikee-src/docs/11_results.md`.

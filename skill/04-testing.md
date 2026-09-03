@@ -2,6 +2,37 @@
 
 Run attack datasets against your target using `spikee test`.
 
+This is the only default execution path for adversarial testing, including one-off trial prompts. Do not manually invoke adversarial inputs through `spikee debug`, a standalone harness, direct target calls, the application UI, browser/Playwright, Burp Repeater, `curl`, or ad hoc scripts, and do not invent attacks outside the agreed dataset/plugin/attack workflow. If Spikee cannot express the requested test, return to the phase that owns the missing target, seed, plugin, attack, or judge capability and ask the user how to proceed.
+
+Only perform manual or out-of-band testing when the user explicitly requests that deviation. Treat it as a narrow exception: confirm its scope and limits, perform only the agreed attempt, and do not invent extra payloads or iterative follow-ups without further approval. Keep its evidence separate from Spikee results, record a concise sanitized `manual deviation` entry in `spikee.log`, and never merge it into Spikee success rates.
+
+> **Workspace memory:** Read `spikee.log` before selecting a command so completed baselines, known limits, and prior result paths are not rediscovered or rerun blindly.
+
+This guide, `spikee list attacks -d`, and examples in the initialized workspace are sufficient for routine test and attack setup. Consult `spikee-src/docs/08_dynamic_attacks.md` when a documented option is unclear. Do not read attack implementation source merely to start a built-in attack; inspect it only for unresolved behavior or debugging.
+
+## Required Testing Sequence
+
+Do not skip ahead when a gate is unresolved:
+
+1. **Check readiness.** Confirm the workspace-local virtual environment is active; the target works for a representative request; the intended dataset and its judges are understood; and required credentials/endpoints are available.
+2. **Run a small static baseline.** Use the real target and unchanged dataset without `--attack`, with conservative concurrency and a reproducible sample.
+3. **Analyse that baseline in Phase 5.** It is sound only when target responses and judge decisions are valid, errors are acceptably low, and the sample covers the intended categories.
+4. **Return to the phase that owns any problem and repeat.** Use Phase 1 for workspace issues, Phase 2 for target issues, or Phase 3 for dataset/judge-definition issues.
+5. **Then scale deliberately.** Run the full static dataset if needed. Use a dynamic attack only when the baseline is sound and the target, provider, and agreed limits are compatible.
+
+Example smoke baseline:
+
+```bash
+spikee test --dataset datasets/my-dataset.jsonl \
+            --target my_target \
+            --sample 0.05 \
+            --sample-seed 42 \
+            --threads 1 \
+            --tag baseline-smoke
+```
+
+Adjust the sample to remain small but representative. Do not interpret or scale a run with judge failures, malformed/empty target responses, widespread request errors, or missing category coverage.
+
 ## 4.1 Basic Test Command
 
 ```bash
@@ -70,7 +101,11 @@ spikee test --dataset datasets/my-dataset.jsonl \
             --judge-options "openai/gpt-4o-mini"
 ```
 
+Preserve the dataset's intended judge semantics. If an LLM judge is required but its provider/model or access is unresolved, stop and ask the user to choose a supported hosted provider/model or a configured local endpoint. Explain the needed `.env` credentials when applicable. **Do not** replace the LLM judge with `regex`/`canary`, edit `judge_name`, or create a custom judge merely to bypass missing LLM access. Present the configuration options and wait for the user's choice. If the user deliberately wants to redesign the evaluation, return to Phase 3, agree the exact judge semantics, update the source seeds, regenerate the dataset, and repeat the baseline.
+
 ### Custom Judges
+
+Create or change a custom judge only when the user explicitly wants a custom evaluation rule—not as a workaround for an unavailable LLM judge.
 
 Create in `judges/` in your workspace:
 
@@ -92,16 +127,25 @@ class MyCustomJudge(Judge):
         return "SECRET_DATA" in str(response)
 ```
 
-> Read `spikee-src/spikee/templates/judge.py` and `spikee-src/spikee/templates/llm_judge.py` for base classes.
-> Read `spikee-src/spikee/data/workspace/judges/` for LLM judge examples.
+> Start with the initialized workspace's `judges/` examples and `spikee-src/docs/09_judges.md`. Inspect judge base-class source only for an unresolved custom-judge contract or debugging issue.
 
 ## 4.4 Dynamic Attacks
 
 Attacks are adaptive strategies that modify payloads in real-time. They run **only when the standard attempt fails** (unless `--attack-only` is used).
 
+Do not add a dynamic attack to the smoke baseline. Before using one, confirm all of the following:
+
+- the static baseline passed the analysis gate above;
+- the attack matches the target's single-turn or multi-turn interface;
+- any attack-side model/provider and credentials or local endpoint are configured;
+- request rate, concurrency, iteration, time, and cost limits are known and acceptable.
+
+If any item is unclear, stop and present the missing decision or configuration instead of guessing. Use `--attack-only` only when the user deliberately wants to omit the standard attempt after a valid baseline exists.
+
 ```bash
+# Crescendo is only for a verified multi-turn target
 spikee test --dataset datasets/my-dataset.jsonl \
-            --target my_target \
+            --target my_chatbot_target \
             --attack crescendo \
             --attack-iterations 10
 ```
@@ -136,8 +180,7 @@ spikee test --dataset datasets/my-dataset.jsonl \
 ```
 
 > List available attacks: `spikee list attacks -d`
-> Read `spikee-src/docs/08_dynamic_attacks.md` for full attack documentation.
-> Read `spikee-src/spikee/templates/attack.py` for the attack base class.
+> If this guide and the list output are insufficient, read `spikee-src/docs/08_dynamic_attacks.md`. Inspect `spikee-src/spikee/templates/attack.py` only when implementing a custom attack and the documented contract remains unclear, or when debugging.
 > **Advanced:** To configure a custom GOAT (Generative Offensive Adversarial Toolkit) attack with specific guardrail mapping, refer to **`04b-goat-attack.md`**.
 
 ### Attack-Only Mode
@@ -224,8 +267,11 @@ class MyAttack(Attack):
         return max_iterations, False, modified_text, ""
 ```
 
-> Read `spikee-src/spikee/data/workspace/attacks/sample_attack.py` for a working example.
-> Read `spikee-src/spikee/attacks/crescendo.py` to see a complex multi-turn attack.
+> Start with `attacks/sample_attack.py` in the initialized workspace and the official dynamic-attack guide. Inspect built-in attack source only if a concrete implementation question remains or observed behavior needs debugging.
+
+The Spikee attack engine calls `target.process_input(...)` in this class. Do not run a custom attack class as a standalone client or use its target calls to conduct manual testing.
+
+After each material baseline, full, or dynamic-attack run, update the `spikee.log` summary and add one concise test activity entry: ISO timestamp, reproducible command with secrets redacted, target/dataset, judge and attack configuration, completion or error status, result path, and next gate. Record an explicitly requested manual deviation as a separate activity type, never as a Spikee run. Do not paste console output or result contents into the log.
 
 ## 4.8 Next Step
 

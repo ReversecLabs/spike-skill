@@ -2,6 +2,10 @@
 
 This guide covers advanced enterprise authentication methods and transport patterns for custom targets. If your application uses standard API keys or simple REST POST requests, refer to `02-custom-targets.md`.
 
+These transport examples belong inside a Spikee target. Use direct requests only to map the interface or perform harmless target verification; do not use them for manual adversarial testing unless the user explicitly requests a separately logged deviation.
+
+Never hardcode API keys, access or refresh tokens, passwords, cookies, or client secrets in target code. Put them in the workspace `.env` (which must not be committed), read them with `os.getenv`, and fail with a clear error when a required value is missing. Non-secret configuration such as illustrative endpoint URLs may remain in code.
+
 ## 1. Advanced Authentication Patterns
 
 ### 1.1 Azure Managed Identity (IMDS)
@@ -46,20 +50,30 @@ Call in `__init__`, refresh on `401`.
 
 ### 1.3 Auth0 / OAuth2 Refresh Token
 
-Short-lived access tokens (~300 s), long-lived refresh token hardcoded or in `.env`. Extract from a captured auth request: token endpoint, `client_id`, any custom headers (`Auth0-Client`, `Origin`), and the initial `refresh_token`.
+Short-lived access tokens (~300 s) can be refreshed from a long-lived refresh token. Extract the request shape from a captured auth request, but store its credential values—including the initial `refresh_token` and any client secret—in the workspace `.env`, never in source code.
 
 > **Auth0 rotates the refresh token on every use** — always capture `refresh_token` from the response or the next call will fail.
 
 ```python
+import os
 import time
 import requests
+from dotenv import load_dotenv
 from typing import Optional
 from spikee.templates.target import Target
 
-AUTH0_TOKEN_URL  = "https://auth.example.com/oauth/token"
-AUTH0_CLIENT_ID  = "yourClientId"
-AUTH0_CLIENT_HDR = "eyJ..."      # Auth0-Client header value
-REFRESH_TOKEN    = "v1.initial"  # update when it rotates
+load_dotenv()  # workspace .env
+
+def required_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Missing {name}; set it in the workspace .env")
+    return value
+
+AUTH0_TOKEN_URL = "https://auth.example.com/oauth/token"  # non-secret
+AUTH0_CLIENT_ID = required_env("AUTH0_CLIENT_ID")
+AUTH0_CLIENT_HDR = required_env("AUTH0_CLIENT_HEADER")
+REFRESH_TOKEN = required_env("AUTH0_REFRESH_TOKEN")
 
 class Auth0Target(Target):
     def __init__(self):
@@ -166,6 +180,8 @@ for line in response.text.strip().split("\n"):
 ```
 
 ### 2.4 WebSocket (async)
+
+If the connection requires cookies, read them from the workspace `.env` with `required_env("TARGET_COOKIES")`; never paste a captured cookie into the target.
 
 ```python
 import asyncio
