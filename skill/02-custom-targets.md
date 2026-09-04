@@ -16,17 +16,42 @@ This phase maps an AI interaction; it is not a general web-application assessmen
 - If the user already named the AI feature, use it. If several candidates are visible and scope is unclear, briefly list them and ask, for example: “I found the chat feature at `/api/chat` and document analysis at `/api/analyse`. Which AI feature is in scope?”
 - If no LLM-powered feature or input path can be identified, stop and ask the user. Do not choose an unrelated endpoint merely to produce a target.
 
-Inspect any URL, API documentation, captured traffic, or existing target the user already provided. When only an application URL is available, make one harmless interaction with the likely AI feature and inspect the traffic it produces; do not catalogue unrelated requests. If the interface remains unclear, ask for a representative request and response captured while using that feature, preferably from Burp Suite or DevTools.
+Inspect any URL, API documentation, captured traffic, or existing target the user already provided. When only an application URL is available, make one harmless interaction only with a user-identified or clearly labelled AI feature and inspect the traffic it produces; do not catalogue unrelated requests. If several features are plausible, ask which is in scope before interacting. If the interface remains unclear, ask for a representative request and response captured while using that feature, preferably from Burp Suite or DevTools.
+
+### Samples Are Never Evidence About the Real Application
+
+Workspace sample targets exist only to demonstrate Spikee base classes, method signatures, option parsing, session handling, response types, and error handling. **Every application-specific value in a sample is fictional unless independently confirmed from the real application.** This includes names, branding, hostnames, paths, methods, headers, request bodies, response fields, credentials, models, feature descriptions, guardrails, and comments.
+
+Apply these as hard stop rules:
+
+- Never conclude that the application under test is the sample application, an upstream demo, or a related project because names, text, endpoints, or behavior appear similar.
+- Never copy or probe a sample hostname, route, request schema, or authentication flow against the real application without independent evidence from the user, supplied documentation, captured traffic, or one harmless observation of the real feature.
+- Never search GitHub or the web for the sample application's source, the supposed upstream project, or source code guessed from similarity. A user-supplied application URL or authorization to build a target does not authorize external source-code discovery.
+- If you believe an external repository or source lookup is needed and the user did not provide it, **STOP before making the request**. Tell the user the exact URL you propose to access, why it is necessary, and ask for approval. Normally, ask for the real feature's Burp/DevTools request and response instead.
+- Reading local Spikee implementation source is allowed only for an unresolved Spikee contract or an observed Spikee failure. Never use it to infer the real application's API.
+
+Similarity is not confirmation. If a sample happens to match a fact already established from the real application, use the real evidence and record that provenance; do not cite the sample as proof.
 
 > "What is the application URL, and can you paste a representative Burp/DevTools request and response? Please redact credential values but leave header and cookie names visible."
 
-If the application appears to be a chatbot or conversational interface, **always ask the user whether the target should be single-turn or multi-turn before implementing it**, even when a captured request is available. Briefly clarify that single-turn treats every prompt independently, while multi-turn preserves conversation state. Do not infer this choice from the API shape alone.
+### Turn Mode Means Conversation State
+
+Choose the target type from the real feature's behavior and the user's preference:
+
+- **Single-turn target:** every Spikee call is independent.
+- **Multi-turn target:** Spikee can preserve or map conversation state across several messages.
+
+The assessment objective does not decide the target type. Harmful-content, prompt-injection, data-access, and cross-tenant objectives can all be attempted with one prompt or through a multi-turn attack. Do not claim that an objective inherently needs multi-turn, rapport building, escalation, or a “more powerful” approach unless the user explicitly defined such a scenario.
+
+A dataset entry is normally one input. Sending it through a multi-turn-capable target does not turn it into a conversation. A multi-turn attack such as `crescendo`, `echo_chamber`, or `multi_turn` creates and manages the additional turns.
+
+If the feature is a genuine chatbot with usable conversation history, ask: **“Should the Spikee target preserve conversation history? I recommend multi-turn because the chatbot supports it; single-turn will treat each prompt independently.”** Ask only this decision unless a technical detail is missing. If the feature has no meaningful conversational state, use single-turn.
 
 Ask only for details that remain unknown:
 
 | # | Question | Drives |
 |---|---|---|
-| 1 | Single-turn (each message independent) or multi-turn (conversation history)? | Base class |
+| 1 | Should Spikee preserve the feature's real conversation history, or treat every call independently? | Base class |
 | 2 | Which request carries the prompt/document to the selected AI feature, and is it HTTP or WebSocket? | Transport pattern |
 | 3 | Where in the response body is the reply text? | Response parsing |
 | 4 | How does it authenticate? (API key / cookie / OAuth2 / IMDS / GCP ADC / JWT) | Auth pattern |
@@ -83,7 +108,7 @@ spikee test --dataset datasets/my-dataset.jsonl \
 
 Create a file in `targets/` in your workspace. Extend the `Target` base class.
 
-> Start with `targets/sample_target.py` in the initialized workspace. If this guide and that example leave a question unanswered, read `spikee-src/docs/06_custom_targets.md`. Inspect `spikee-src/spikee/templates/target.py` only to resolve a remaining contract ambiguity or debug unexpected behavior.
+> Start with `targets/sample_target.py` for Spikee structure only. Discard its application-specific literals. If the guide and structural example leave a Spikee contract question unanswered, read `spikee-src/docs/06_custom_targets.md`, then the smallest relevant template source only if necessary.
 
 The URL, request body, response field, and status handling below are illustrative. Replace them only with behavior established from the real application; never leave the fictional mapping in a completed target.
 
@@ -163,13 +188,13 @@ class MyAppTarget(Target):
 
 ## 2.4 Multi-Turn Target
 
-For applications that maintain conversation state (chatbots, agents). Spikee provides two base classes:
+For applications that maintain conversation state. This capability allows multi-turn attacks, but ordinary dataset entries remain single inputs unless such an attack is selected. Spikee provides two base classes:
 
 ### Option A: SimpleMultiTarget (Recommended)
 
 The simpler approach — manages a local conversation history for you. Best when the application is stateless and you pass the full conversation each time.
 
-> Start with `targets/simple_test_chatbot.py` in the initialized workspace. Use `spikee-src/docs/06_custom_targets.md` for additional documented details. Inspect `spikee-src/spikee/templates/simple_multi_target.py` only if the example and official guide do not resolve a specific contract or debugging question.
+> Start with `targets/simple_test_chatbot.py` for the `SimpleMultiTarget` structure only. Its application identity, URLs, routes, schemas, and authentication are not evidence about the real target. Use the custom-target docs, then template source, only for a remaining Spikee contract or debugging question.
 
 ```python
 # targets/my_chatbot_target.py

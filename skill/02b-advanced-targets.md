@@ -4,6 +4,8 @@ This guide covers advanced enterprise authentication methods and transport patte
 
 These patterns may support only the selected LLM-powered feature's input/output path. They do not authorize endpoint discovery or general web pentesting. Use direct requests only to map that path or perform harmless target verification; do not test unrelated endpoints or perform manual adversarial testing unless the user explicitly requests a separately logged deviation.
 
+All hosts, routes, headers, schemas, and authentication details in this guide are illustrative. Never treat them as facts about the real application, probe them because they resemble the target, or use them to identify an upstream project. External repository/source lookup requires the user to supply it or explicitly approve the exact proposed lookup.
+
 Never hardcode API keys, access or refresh tokens, passwords, cookies, or client secrets in target code. Put them in the workspace `.env` (which must not be committed), read them with `os.getenv`, and fail with a clear error when a required value is missing. Non-secret configuration such as illustrative endpoint URLs may remain in code.
 
 ## 1. Advanced Authentication Patterns

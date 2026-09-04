@@ -111,12 +111,15 @@ Read `02-custom-targets.md`; read `02b-advanced-targets.md` only for advanced au
 
 1. Scope the target to one LLM-powered feature that accepts user-controlled text or a document and returns an AI response or guardrail decision. A target is not a general web pentest client.
 2. Observe only the application path needed to operate that feature. Do not enumerate, crawl, scan, fuzz, or test unrelated routes. If several AI features are plausible and the user's scope does not identify one, list the candidates and ask which to target.
-3. Reuse a suitable target when possible. Otherwise ask only for missing facts needed to map the selected feature: URL, captured Burp/DevTools request and response, authentication, input/output fields, errors, and session behavior.
-4. Do not assume every AI feature is a chatbot. If it appears conversational, ask whether the target should be single-turn or multi-turn.
-5. Prefer a mapped HTTP or WebSocket target. Use browser inspection only when mapping is unclear; propose a Playwright-backed target only when browser state is truly required.
-6. Keep credentials in `.env`, never in code or CLI options. Preserve existing `.env` entries when adding or changing a variable.
-7. Start from workspace `targets/` examples. Use docs, then source, only under the reference order below.
-8. Prove the target with one harmless Spikee request. For multi-turn, prove two messages retain context. Stop after a valid, parsed response.
+3. **Samples are structure only.** Never infer the real application's identity, source project, URL, routes, request schema, authentication, behavior, or guardrails from a sample target—even when names or UI text look similar. Copy only Spikee class and method patterns.
+4. Never search for, fetch, or clone an application or sample application's source repository based on such a similarity. Never probe endpoints copied or guessed from a sample. If external source lookup seems necessary and the user did not supply or authorize it, stop before the lookup and ask with the exact URL and reason.
+5. Reuse a target only when the user or evidence from the real application confirms it is correct. Otherwise ask only for missing facts needed to map the selected feature: URL, captured Burp/DevTools request and response, authentication, input/output fields, errors, and session behavior.
+6. Choose target turn mode from the real feature's conversation capability, not from the security objective. Single-turn means independent calls; multi-turn means the target can preserve conversation state. Harmful-content and authorization tests may use either mode.
+7. For a genuine chatbot with usable history, ask whether Spikee should preserve it and normally recommend a multi-turn target. Give no invented rationale. A static dataset entry remains one prompt even through a multi-turn-capable target; only a multi-turn attack such as `crescendo` creates a multi-message test.
+8. Prefer a mapped HTTP or WebSocket target. Use browser inspection only when mapping is unclear; propose a Playwright-backed target only when browser state is truly required.
+9. Keep credentials in `.env`, never in code or CLI options. Preserve existing `.env` entries when adding or changing a variable.
+10. Start from workspace `targets/` examples for Spikee structure only. Use docs, then source, only under the reference order below.
+11. Prove the target with one harmless Spikee request. For multi-turn, prove two messages retain context. Stop after a valid, parsed response.
 
 **Exit gate:** Spikee can invoke the target and parse a valid application response.
 
@@ -161,11 +164,11 @@ The workflow is circular. A new hypothesis may require a revised target or datas
 Do not read Spikee implementation source for routine target creation, dataset generation, or attack execution.
 
 1. Read only the current phase guide.
-2. Use the relevant `spikee list <category> -d`; for custom modules, inspect the closest example in the initialized workspace.
+2. Use the relevant `spikee list <category> -d`; for custom modules, inspect the closest workspace example only for the Spikee API pattern. Treat every application-specific literal in it as fictional.
 3. If a specific question remains, read the relevant official document under `spikee-src/docs/`.
 4. Read the smallest relevant file under `spikee-src/spikee/` only for an unresolved contract or observed failure.
 
-Before opening source, state the exact unanswered question or error. Do not scan or preload the tree “just in case.”
+Before opening source, state the exact unanswered question or error. Do not scan or preload the tree “just in case.” Spikee source may answer a framework-contract question; it is never evidence of the real target application's interface.
 
 Useful documentation routes:
 
