@@ -2,7 +2,7 @@
 
 This guide covers advanced enterprise authentication methods and transport patterns for custom targets. If your application uses standard API keys or simple REST POST requests, refer to `02-custom-targets.md`.
 
-These transport examples belong inside a Spikee target. Use direct requests only to map the interface or perform harmless target verification; do not use them for manual adversarial testing unless the user explicitly requests a separately logged deviation.
+These patterns may support only the selected LLM-powered feature's input/output path. They do not authorize endpoint discovery or general web pentesting. Use direct requests only to map that path or perform harmless target verification; do not test unrelated endpoints or perform manual adversarial testing unless the user explicitly requests a separately logged deviation.
 
 Never hardcode API keys, access or refresh tokens, passwords, cookies, or client secrets in target code. Put them in the workspace `.env` (which must not be committed), read them with `os.getenv`, and fail with a clear error when a required value is missing. Non-secret configuration such as illustrative endpoint URLs may remain in code.
 

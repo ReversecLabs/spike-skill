@@ -10,34 +10,78 @@ Only perform manual or out-of-band testing when the user explicitly requests tha
 
 This guide, `spikee list attacks -d`, and examples in the initialized workspace are sufficient for routine test and attack setup. Consult `spikee-src/docs/08_dynamic_attacks.md` when a documented option is unclear. Do not read attack implementation source merely to start a built-in attack; inspect it only for unresolved behavior or debugging.
 
+## Mandatory Preview and Attachable Session for `spikee test`
+
+Before execution, show the fully resolved test command without placeholders or secrets and propose a unique session such as `spikee-baseline-20260904-143000`. Ask: **“Would you like to run this command yourself, or should I run it in tmux session `<name>`?”**
+
+- If the user will run it, wait for their result.
+- For agent execution, create an empty session in the workspace with `remain-on-exit`, tell the user `tmux attach-session -t <name>`, then start the confirmed command inside it. Do not start before sending the attach command.
+- Monitor with `tmux capture-pane` and leave the session available after exit.
+- If tmux is unavailable, stop and offer installation or an attachable equivalent. Never substitute foreground execution, `&`, or `nohup`.
+- Only the user's explicit no-session instruction waives tmux for that test. A confirmation waiver, urgency, or a short run does not.
+
+Other Spikee commands run normally without tmux.
+
 ## Required Testing Sequence
 
 Do not skip ahead when a gate is unresolved:
 
-1. **Check readiness.** Confirm the workspace-local virtual environment is active; the target works for a representative request; the intended dataset and its judges are understood; and required credentials/endpoints are available.
-2. **Run a small static baseline.** Use the real target and unchanged dataset without `--attack`, with conservative concurrency and a reproducible sample.
-3. **Analyse that baseline in Phase 5.** It is sound only when target responses and judge decisions are valid, errors are acceptably low, and the sample covers the intended categories.
-4. **Return to the phase that owns any problem and repeat.** Use Phase 1 for workspace issues, Phase 2 for target issues, or Phase 3 for dataset/judge-definition issues.
-5. **Then scale deliberately.** Run the full static dataset if needed. Use a dynamic attack only when the baseline is sound and the target, provider, and agreed limits are compatible.
+1. Confirm the venv, target, dataset question, judges, credentials, endpoints, concurrency, and tmux availability.
+2. Check `spikee.log` and results for a matching baseline: same application state, target/options, entries, and judge semantics.
+3. Count selected entries and calculate the workload ceiling and provider-call estimate.
+4. Present one approval block with the exact command and execution choice.
+5. If no matching baseline exists, run a static smoke baseline without `--attack`; fix errors before scaling.
+6. Add a relevant dynamic attack only after execution is sound. Use `--attack-only` when a recorded matching baseline makes repeated direct attempts unnecessary.
 
 Example smoke baseline:
 
 ```bash
 spikee test --dataset datasets/my-dataset.jsonl \
             --target my_target \
-            --sample 0.05 \
+            --sample <agreed-fraction> \
             --sample-seed 42 \
-            --threads 1 \
+            --threads <agreed-n> \
             --tag baseline-smoke
 ```
 
-Adjust the sample to remain small but representative. Do not interpret or scale a run with judge failures, malformed/empty target responses, widespread request errors, or missing category coverage.
+Agree whether to use the full dataset or a sample, and state both the fraction and resulting entry count before approval. Do not choose a sample merely because the assistant considers the full dataset long. Do not interpret or scale a run with judge failures, malformed/empty target responses, widespread request errors, or missing category coverage.
+
+## Agree Concurrency Before Testing
+
+Spikee defaults to 4 threads. Agree an explicit `--threads <n>` using the lowest relevant capacity: target rate/session limits, LLM-judge capacity, and LLM-attack-model capacity. Reuse a logged value only when those constraints are unchanged.
+
+Tell the user that a local llama.cpp server with one slot, such as `-np 1`, will serialize higher concurrency and may become slow or time out. Browser-backed or stateful targets normally start at 1 unless worker state is isolated. Recommend a value, let the user choose, and record the decision. On 429s, broken sessions, queues, or timeouts, stop scaling and revisit it.
+
+## Concise Workload Approval Before Each Test
+
+Derive the workload from the command rather than guessing from the dataset filename:
+
+- Let `D` be the entries actually selected after `--sample` or other dataset selection, `A` be `--attempts`, and `I` be `--attack-iterations`.
+- Without a dynamic attack, the planned ceiling is `D × A` target attempts.
+- With an attack and ordinary standard attempts, the planned ceiling is `D × A × (1 + I)` target attempts.
+- With `--attack-only`, the planned ceiling is `D × A × I` target attempts.
+
+These are conservative target-attempt ceilings. Success can stop attacks early; `--max-retries` can increase transport calls. Estimate judge and attack-model calls separately when possible, otherwise state the uncertainty.
+
+Dynamic `best_of_n` illustrates the distinction. For 1,000 selected entries, `--attempts 1`, and `--attack-iterations 10`, the attack portion can make up to 10,000 target attempts. The planned ceiling is 10,000 with `--attack-only`, or 11,000 when the standard attempt is included. This runtime attack does **not** enlarge the dataset JSONL. By contrast, the generation-time `best_of_n` plugin with `variants=10` creates additional dataset entries, so that larger entry count becomes `D` in the formulas above.
+
+Present one compact approval message:
+
+- **Dataset:** path; total entries; selected entries after sampling.
+- **Run:** baseline or attack; `--attempts`; attack iterations; `--max-retries`/throttle; whether the standard attempt is included or a named matching baseline is reused.
+- **Workload:** planned maximum target attempts before transport retries; judge/attack-model request estimate or clearly stated uncertainty; material time/cost implication.
+- **Concurrency:** explicit threads, Spikee default of 4 for context, and known target/local-model capacity.
+- **Command:** the complete exact command with no secret values.
+- **Execution:** proposed tmux session and attach command.
+
+End with: **“Approve this run? Would you like to execute it yourself, or should I run it in tmux session `<name>`?”** If an option changes, recompute and show the block once. A command-confirmation waiver does not resolve dataset-size, workload, concurrency, traffic, or cost decisions.
 
 ## 4.1 Basic Test Command
 
 ```bash
 spikee test --dataset "datasets/cybersec-2026-01-*.jsonl" \
-            --target my_app_target
+            --target my_app_target \
+            --threads <agreed-n>
 ```
 
 **Key flags:**
@@ -55,22 +99,26 @@ For testing raw LLM endpoints without writing a custom target:
 # OpenAI
 spikee test --dataset datasets/my-dataset.jsonl \
             --target llm_provider \
-            --target-options "openai/gpt-4o-mini"
+            --target-options "openai/gpt-4o-mini" \
+            --threads <agreed-n>
 
 # Bedrock
 spikee test --dataset datasets/my-dataset.jsonl \
             --target llm_provider \
-            --target-options "bedrock/anthropic.claude-3-sonnet-20240229-v1:0"
+            --target-options "bedrock/anthropic.claude-3-sonnet-20240229-v1:0" \
+            --threads <agreed-n>
 
 # Ollama (local)
 spikee test --dataset datasets/my-dataset.jsonl \
             --target llm_provider \
-            --target-options "ollama/llama3"
+            --target-options "ollama/llama3" \
+            --threads <agreed-n>
 
 # Google Gemini
 spikee test --dataset datasets/my-dataset.jsonl \
             --target llm_provider \
-            --target-options "google/gemini-1.5-flash"
+            --target-options "google/gemini-1.5-flash" \
+            --threads <agreed-n>
 ```
 
 > For the full provider/model list, read `spikee-src/docs/03_llm_providers.md`.
@@ -98,7 +146,8 @@ Every dataset entry has a `judge_name` field that determines how Spikee evaluate
 ```bash
 spikee test --dataset datasets/my-dataset.jsonl \
             --target my_target \
-            --judge-options "openai/gpt-4o-mini"
+            --judge-options "openai/gpt-4o-mini" \
+            --threads <agreed-n>
 ```
 
 Preserve the dataset's intended judge semantics. If an LLM judge is required but its provider/model or access is unresolved, stop and ask the user to choose a supported hosted provider/model or a configured local endpoint. Explain the needed `.env` credentials when applicable. **Do not** replace the LLM judge with `regex`/`canary`, edit `judge_name`, or create a custom judge merely to bypass missing LLM access. Present the configuration options and wait for the user's choice. If the user deliberately wants to redesign the evaluation, return to Phase 3, agree the exact judge semantics, update the source seeds, regenerate the dataset, and repeat the baseline.
@@ -131,7 +180,7 @@ class MyCustomJudge(Judge):
 
 ## 4.4 Dynamic Attacks
 
-Attacks are adaptive strategies that modify payloads in real-time. They run **only when the standard attempt fails** (unless `--attack-only` is used).
+Attacks are adaptive strategies that modify payloads in real-time. They run **only when the standard attempt fails** unless `--attack-only` is used. This makes the ordinary combined run meaningful: an attack-only success is a demonstrated bypass only when the same entry has a trustworthy baseline refusal.
 
 Do not add a dynamic attack to the smoke baseline. Before using one, confirm all of the following:
 
@@ -140,21 +189,24 @@ Do not add a dynamic attack to the smoke baseline. Before using one, confirm all
 - any attack-side model/provider and credentials or local endpoint are configured;
 - request rate, concurrency, iteration, time, and cost limits are known and acceptable.
 
-If any item is unclear, stop and present the missing decision or configuration instead of guessing. Use `--attack-only` only when the user deliberately wants to omit the standard attempt after a valid baseline exists.
+If any item is unclear, stop and present the missing decision or configuration instead of guessing. Use `--attack-only` when a trustworthy matching baseline already exists and the user wants to avoid rerunning the same direct attempts, such as when comparing a second attack against a dataset already baselined by the first. Record the reused baseline path in `spikee.log`. Without matching baseline evidence, omit `--attack-only` or run a separate static baseline first.
+
+Instructions-only datasets are a natural input for objective-driven attacks. Their unmodified run asks whether the target complies with direct harmful requests; an LLM-driven attack asks whether it can wrap or adapt those objectives into successful jailbreak attempts. If the direct request already succeeds, report that baseline safety failure first: running a jailbreak attack adds little evidence for that entry unless the user has a different stated purpose.
 
 ```bash
 # Crescendo is only for a verified multi-turn target
 spikee test --dataset datasets/my-dataset.jsonl \
             --target my_chatbot_target \
             --attack crescendo \
-            --attack-iterations 10
+            --attack-iterations 10 \
+            --threads <agreed-n>
 ```
 
 ### Single-Turn Attacks
 
 | Attack | Strategy | Options |
 |---|---|---|
-| `best_of_n` | Randomly perturbs the payload N times | `model=`, `variants=` |
+| `best_of_n` | Randomly perturbs the payload until success or the iteration limit | Controlled by `--attack-iterations`; no LLM required |
 | `random_suffix_search` | Appends random suffixes to find bypasses | — |
 | `prompt_decomposition` | Breaks the prompt into sub-questions | `model=` |
 | `llm_jailbreaker` | Uses an LLM to rephrase the attack | `model=` |
@@ -176,7 +228,8 @@ spikee test --dataset datasets/my-dataset.jsonl \
             --target my_chatbot_target \
             --attack crescendo \
             --attack-iterations 15 \
-            --attack-options "model=openai/gpt-4o-mini,max-turns=5"
+            --attack-options "model=openai/gpt-4o-mini,max-turns=5" \
+            --threads <agreed-n>
 ```
 
 > List available attacks: `spikee list attacks -d`
@@ -185,17 +238,19 @@ spikee test --dataset datasets/my-dataset.jsonl \
 
 ### Attack-Only Mode
 
-Skip the initial standard attempt and only run the dynamic attack:
+Skip the initial standard attempt and run only the dynamic attack when a trustworthy matching baseline already exists. Keep its result path in `spikee.log` so the attack-only outcome can be compared correctly:
+
 ```bash
 spikee test --dataset datasets/my-dataset.jsonl \
-            --target my_target \
+            --target my_chatbot_target \
             --attack crescendo \
-            --attack-only
+            --attack-only \
+            --threads <agreed-n>
 ```
 
 ## 4.5 Runtime Parameters
 
-- `--threads <n>`: Parallel threads (default: 4)
+- `--threads <n>`: Parallel test workers (Spikee default: 4). Always discuss and set this explicitly according to the target, judge, and attack-model capacities.
 - `--attempts <n>`: Retry attempts per entry (default: 1)
 - `--max-retries <n>`: Retries for 429/transient errors (default: 3)
 - `--throttle <seconds>`: Wait time between requests per thread
@@ -208,14 +263,15 @@ Spikee auto-detects previous results files and offers to resume:
 
 ```bash
 # Auto-resume from latest matching results file
-spikee test --dataset datasets/my-dataset.jsonl --target my_target --auto-resume
+spikee test --dataset datasets/my-dataset.jsonl --target my_target --auto-resume --threads <agreed-n>
 
 # Resume from a specific file
 spikee test --dataset datasets/my-dataset.jsonl --target my_target \
-            --resume-file results/results_my_target_cybersec-2026-01_1234567890.jsonl
+            --resume-file results/results_my_target_cybersec-2026-01_1234567890.jsonl \
+            --threads <agreed-n>
 
 # Force fresh start (no resume)
-spikee test --dataset datasets/my-dataset.jsonl --target my_target --no-auto-resume
+spikee test --dataset datasets/my-dataset.jsonl --target my_target --no-auto-resume --threads <agreed-n>
 ```
 
 ## 4.7 Writing Custom Attacks
@@ -271,7 +327,7 @@ class MyAttack(Attack):
 
 The Spikee attack engine calls `target.process_input(...)` in this class. Do not run a custom attack class as a standalone client or use its target calls to conduct manual testing.
 
-After each material baseline, full, or dynamic-attack run, update the `spikee.log` summary and add one concise test activity entry: ISO timestamp, reproducible command with secrets redacted, target/dataset, judge and attack configuration, completion or error status, result path, and next gate. Record an explicitly requested manual deviation as a separate activity type, never as a Spikee run. Do not paste console output or result contents into the log.
+At launch, update the `spikee.log` summary and add one concise test activity entry with the ISO timestamp, who is running it, sanitized reproducible command, total/selected entry counts, planned target-attempt ceiling, agreed thread count and known concurrency limits, session manager/name, exact attach command, target/dataset, judge and attack configuration, and `started` status. On completion, update the same entry when practical with actual attempts, completion or error status, result path, baseline path if reused, and next gate. Keep Current State's command-confirmation mode and any active autonomy scope accurate. Record a user-approved no-session waiver or manual deviation explicitly and separately. Do not log a proposed but unexecuted command as completed, and do not paste console output or result contents into the log.
 
 ## 4.8 Next Step
 

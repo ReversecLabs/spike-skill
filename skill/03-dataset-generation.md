@@ -21,15 +21,48 @@ spikee list seeds
 | Seed | Category | Use case |
 |---|---|---|
 | `seeds-cybersec-2026-01` | CyberSecurity | Data exfil, XSS, social engineering, resource exhaustion |
-| `seeds-simsonsun-high-quality-jailbreaks` | Harmful content | High-quality jailbreak prompts (standalone) |
-| `seeds-in-the-wild-jailbreak-prompts` | Harmful content | Real-world jailbreak prompts (standalone) |
-| `seeds-wildguardmix-harmful` | Harmful content | Harmful content generation prompts (standalone) |
+| `seeds-harmful-instructions-only` | Harmful objectives | Plain harmful instructions for direct-request baselines and compatible LLM-driven attacks |
+| `seeds-simsonsun-high-quality-jailbreaks` | Harmful content | Compact, curated set of complete malicious/jailbreak prompts; usual quick starting point |
+| `seeds-in-the-wild-jailbreak-prompts` | Harmful content | Broader collection of complete real-world malicious/jailbreak prompts |
+| `seeds-wildguardmix-harmful` | Harmful content | Complete common harmful/malicious prompts, including jailbreak-style attempts |
 | `seeds-toxic-chat` | Harmful content | Toxic conversation prompts (standalone) |
 | `seeds-investment-advice` | Out-of-topic | Investment advice guardrail testing |
 | `seeds-sysmsg-extraction-2025-04` | System message | System prompt extraction attempts |
 | `seeds-mini-test` | Test | Small dataset for quick validation |
 
 > For full seed details, read `spikee-src/docs/02_builtin.md`.
+
+## Dataset Selection — Start with the Question
+
+Do not choose a dataset only because it is available or large. Inspect representative entries and explain what evidence it can produce:
+
+| Input strategy | What Spikee sends | Question answered |
+|---|---|---|
+| Instructions-only, no attack | The plain harmful objective, without jailbreak framing | Will the target comply with a direct harmful request? |
+| Ready-to-send public prompt corpus | A complete malicious prompt that may already contain a jailbreak | Will the target refuse common known malicious/jailbreak prompts? |
+| Composable dataset | An objective wrapped in a chosen jailbreak and application context | Does that technique achieve the objective in this application-specific context? |
+| Dataset generated with plugins | A fixed set of saved transformations, all tested independently | Do these predefined modifications bypass the target, and how consistently? |
+| Runtime attack | Iteratively or adaptively generated attempts derived from an entry/objective | Can additional attack effort find a successful variation after the original input is refused? |
+
+### Instructions-only objectives
+
+`seeds-harmful-instructions-only` contains harmful objectives, a direct `<PLACEHOLDER>` input, and a `no-jailbreak` pass-through. Its generated entries are therefore plain requests such as an unwrapped harmful instruction, not jailbreak attempts.
+
+Without an attack, they measure direct compliance, not jailbreak resistance. They are also suitable objectives for LLM-driven attacks: `llm_jailbreaker` wraps them in single-turn variations, while `crescendo` pursues them through a proven multi-turn target. The comparison asks whether attack effort turns a baseline refusal into harmful compliance.
+
+### Ready-to-send harmful and jailbreak prompts
+
+Simsonsun, In-the-Wild, and WildGuardMix are ready-to-send public corpora containing malicious prompts and jailbreaks. For a quick first check against known harmful jailbreaks, normally start with compact Simsonsun Dataset 1 (67 entries); use a broader corpus when the user wants more coverage.
+
+Measure the original prompts first unless a matching baseline exists. Applying `best_of_n`, encoding, obfuscation, or an LLM transformation then asks whether modified versions succeed where the originals were refused. If an original already succeeds, no bypass was needed for that entry. These are starting points; state what the selected run will and will not establish.
+
+## Dataset Size Is the User's Decision
+
+Never label a dataset large or small using the assistant's threshold, and never resize it unilaterally. Estimate the count before generation when practical. Afterwards, count valid JSONL entries and ask once unless that count or sizing rule is already approved:
+
+> “This dataset contains 1,100 entries. Is that size okay, or would you like it shorter or longer?”
+
+Do not sample, filter, adjust variants, or regenerate until the user chooses. If the next test is already defined, combine size acceptance with its workload approval; otherwise ask only this size question.
 
 ## 3.2 How Composable Datasets Work
 
@@ -266,8 +299,12 @@ Plugins transform the payload before injection to test encoding-based bypasses.
 ```bash
 spikee generate --seed-folder datasets/seeds-my-assessment \
                 --plugins best_of_n \
-                --plugin-options "best_of_n:model=openai/gpt-4o-mini,variants=5"
+                --plugin-options "best_of_n:variants=5"
 ```
+
+`best_of_n` exists in two forms. As a plugin, it creates a fixed number of dataset entries during `spikee generate`; `variants=N` controls that number and no LLM is required. As a dynamic attack, it generates and tests variants during `spikee test`, with the attempt count controlled by `--attack-iterations`. Keep these evidence models distinct.
+
+For generation-time plugins such as `best_of_n`, include the variant multiplier in the pre-generation size estimate and size approval. Do not lower `variants` merely because the resulting dataset looks large.
 
 > List available plugins: `spikee list plugins -d`
 > For custom plugin creation, start with `plugins/sample_plugin.py` in the initialized workspace and `spikee-src/docs/07_custom_plugins.md`. Inspect plugin implementation source only if a specific contract remains unclear or behavior needs debugging.
@@ -310,7 +347,7 @@ When writing custom instructions, **every instruction needs a judge** — you mu
 
 ### The Decision Framework
 
-Ask the user these questions for each instruction type:
+Use this decision order. Ask only when the success evidence is not already clear from the agreed objective.
 
 **1. "Will the attack produce a specific, predictable string in the output?"**
 
@@ -419,10 +456,13 @@ When a dataset requires an LLM judge, **ask the user which provider and model th
 3. For a hosted provider, tell them which API-key variable to add to the workspace `.env`; do not put the key in the dataset or source code.
 4. For local inference, ask for the endpoint and model. Spikee supports options such as Ollama (`OLLAMA_URL`), llama.cpp (`LLAMACPP_URL`), and other OpenAI-compatible endpoints via the `custom` provider (`CUSTOM_API_URL` and, when required, `CUSTOM_API_KEY`).
 5. Confirm the provider/model passed through `--judge-options`, for example `--judge-options "openai/gpt-4o-mini"`.
+6. For a local judge endpoint, ask how many parallel requests or processing slots it supports and carry that fact into Phase 4. Explain that Spikee test concurrency can otherwise exceed the server's capacity, causing requests to queue, run sequentially, or time out. Do not alter the judge to avoid this constraint.
+
+For a supplied local endpoint, follow Phase 1's one-request model-discovery path. Do not re-probe a server that is already configured and recorded.
 
 If the user cannot provide LLM-judge access or the provider choice remains unclear, stop and present these options: configure a hosted provider, use a local endpoint, postpone the run, or explicitly redesign the evaluation. When replacing a required or existing semantic LLM judge, suggest `regex` only as a last resort when success truly has a reliable textual pattern; warn that it changes the evaluation semantics and can miss or misclassify results, and do not make the substitution without explicit approval. This does not prevent choosing `regex` for a new test whose success condition is inherently pattern-based.
 
-LLM judges add one model call per judged test entry, so tell the user about the likely cost and runtime when the dataset is large. This is not a reason to change the selected judge automatically.
+LLM judges add model calls for judged responses. A basic one-attempt run commonly needs one judging call per entry, while retries, multiple attempts, or dynamic attacks can produce additional judged responses. State the counts and likely cost/runtime implications and let the user decide whether they are acceptable; do not label them large or small. This is not a reason to change the selected judge automatically. Final `--threads` selection belongs to Phase 4 and must be agreed with the user.
 
 ### Summary: Judge Selection Cheatsheet
 
@@ -483,8 +523,8 @@ class MyEncoder(BasicPlugin):
 
 > Start with `plugins/sample_plugin.py` in the initialized workspace and the official custom-plugin guide. Inspect `spikee-src/spikee/templates/basic_plugin.py` or a built-in plugin only for an unresolved contract or debugging need.
 
-After generating or materially revising a dataset, update `spikee.log` with the agreed objective, source seed and generated dataset paths, judge/provider decisions, sanitized generation command, entry count or brief QA outcome, and next gate. Keep dataset content in its artifact rather than copying entries into the log.
+After generating or materially revising a dataset, update `spikee.log` with the question the run is intended to answer, source seed and generated dataset paths, whether entries are plain objectives, complete prompts, or composed prompts, judge/provider decisions, sanitized generation command, actual entry count, the user's size decision, brief QA outcome, and next gate. Keep dataset content in its artifact rather than copying entries into the log.
 
 ## 3.9 Next Step
 
-Once you have a generated dataset in `datasets/`, proceed to **Phase 4** to run tests.
+Once you have a generated dataset in `datasets/` and its size is accepted, proceed to **Phase 4** to run tests. Every `spikee test` must use Phase 4's workload approval and mandatory named attachable session unless the user explicitly opts out for that run.

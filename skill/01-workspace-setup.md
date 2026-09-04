@@ -46,7 +46,7 @@ source .venv/bin/activate
 python -m pip install "spikee[all]"
 ```
 
-Before creating a venv or installing a package when the user has not already asked you to perform setup, tell them what you propose and ask whether they want you to proceed. Do not install Spikee system-wide or use a preinstalled system-wide copy by default. Only do so when the user explicitly chooses that approach after you explain that a workspace-local venv is preferred.
+Before creating a venv or installing a package when the user has not already asked you to perform setup, show the exact commands, tell them what you propose, and ask whether they want to run them or want you to proceed. Run these setup commands normally without tmux. Do not install Spikee system-wide or use a preinstalled system-wide copy by default. Only do so when the user explicitly chooses that approach after you explain that a workspace-local venv is preferred.
 
 After any installation, print and compare the local version as described above. Only after the local venv contains a compatible Spikee installation, check whether the directory is initialized by looking for workspace artifacts such as `datasets/`, `targets/`, `results/`, and `.env`.
 
@@ -81,6 +81,15 @@ After initialization, create `spikee.log` in the workspace root if it is absent,
 
 LLM providers are used for supporting features (LLM judges, dynamic attacks, LLM plugins), not the target itself. Determine if the user plans to use these features. If yes, install the necessary extra and update `.env`.
 
+Use information the user already supplied. Do not probe a provider's inference endpoint, inspect provider source, or try several URL forms before an error exists. For a supplied local endpoint, perform only the provider's model-list request, choose the sole returned model, or ask the user to choose from the returned IDs.
+
+For llama.cpp:
+
+1. Normalize the supplied URL to an API base ending in exactly one `/v1`; for example, `http://localhost:8004` becomes `http://localhost:8004/v1`. Request `<api-base>/models` once. Do not send a chat completion for model discovery.
+2. If one model is returned, use it. If several are returned, list their exact IDs and ask which one to use. Do not select based on model-name guesses.
+3. Set `LLAMACPP_URL` to that API base. Preserve every unrelated `.env` entry; never replace the file just to set this variable.
+4. If model listing fails, report the exact status/error and debug that failure. If it succeeds, stop checking the server and continue. Let the first real Spikee use expose any remaining integration error.
+
 | Provider | Install extra | Env vars needed in `.env` |
 |---|---|---|
 | OpenAI | None — included by default | `OPENAI_API_KEY` |
@@ -97,7 +106,7 @@ LLM providers are used for supporting features (LLM judges, dynamic attacks, LLM
 
 If the user doesn't plan to use LLM judges or attacks (e.g., only using `canary`/`regex` judges and no dynamic attacks), **no provider configuration is needed** — skip to 1.4.
 
-Edit `.env` in the workspace root and add only the relevant keys:
+Edit `.env` in the workspace root and add or update only the relevant keys without overwriting other entries:
 ```bash
 # Example: using OpenAI for judges and Bedrock for attacks
 OPENAI_API_KEY=sk-...
@@ -112,19 +121,15 @@ After a material provider configuration decision or change, update the `spikee.l
 
 ## 1.4 Verify Setup
 
-```bash
-# List available seeds
-spikee list seeds
+Verify only what the next phase needs. Do not enumerate every module category as a setup ritual.
 
-# List available targets, plugins, attacks, judges
-spikee list targets
-spikee list plugins
-spikee list attacks
-spikee list judges
-spikee list providers
+```bash
+# Examples: run only the relevant lookup
+spikee list targets -d
+spikee list providers -d
 ```
 
-> Add `-d` for descriptions: `spikee list targets -d`
+Use `spikee list targets -d` when choosing a target, `spikee list seeds -d` when choosing a seed, and likewise for providers, judges, plugins, or attacks. Stop once the needed category is confirmed.
 
 ## 1.5 What's Next?
 
