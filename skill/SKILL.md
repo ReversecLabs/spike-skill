@@ -16,6 +16,8 @@ Use Spikee to generate datasets, test an LLM application, and analyse the result
 
 Take the shortest documented path through the current gate.
 
+Keep the workspace lean: create only files and configuration needed for the current task; avoid unused examples, placeholders, and redundant artifacts.
+
 1. Treat facts the user already supplied—workspace, provider, URL, port, model, credentials, target behavior, and limits—as the working configuration. Do not ask for them again or verify them repeatedly without a concrete reason.
 2. Read `spikee.log`, inspect only the relevant artifacts, and read only the current phase guide.
 3. Perform the minimum check or action needed to cross the gate. Once it succeeds, advance. Do not continue checking the same fact.

@@ -79,6 +79,8 @@ After initialization, create `spikee.log` in the workspace root if it is absent,
 
 ## 1.3 Configure LLM Providers
 
+Create a clean `.env` with only the variables required for the current task; do not copy the workspace's `.env.example`. If `.env` already exists, preserve its entries and add or update only what is needed.
+
 LLM providers are used for supporting features (LLM judges, dynamic attacks, LLM plugins), not the target itself. Determine if the user plans to use these features. If yes, install the necessary extra and update `.env`.
 
 Use information the user already supplied. Do not probe a provider's inference endpoint, inspect provider source, or try several URL forms before an error exists. For a supplied local endpoint, perform only the provider's model-list request, choose the sole returned model, or ask the user to choose from the returned IDs.
