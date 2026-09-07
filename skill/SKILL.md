@@ -129,10 +129,10 @@ Read `02-custom-targets.md`; read `02b-advanced-targets.md` only for advanced au
 
 Read `03-dataset-generation.md`.
 
-1. Agree the question each dataset should answer. Distinguish plain harmful objectives, ready-to-send jailbreak corpora, composable injections, generation-time transformations, and runtime attacks.
+1. Before customizing seeds or generating datasets, clarify any unresolved goals and present a coverage plan: the question each dataset answers, suitable built-in seeds, and gaps requiring customization. Get the user's agreement unless they have explicitly delegated dataset decisions for this step or the whole task; then choose within that scope and state the plan. Follow Phase 3's design gate.
 2. Preserve existing judge names and arguments. Never replace an LLM judge with regex/canary, invent judge criteria, or otherwise change evaluation semantics without explicit user approval.
 3. If an LLM judge is required, agree the provider and model. For hosted providers, name the `.env` key; for local providers, obtain the endpoint/model and supported concurrency. If access is unavailable or unclear, stop and offer options. Regex is a last-resort substitute only when the user accepts the changed semantics.
-4. Estimate dataset size when practical. After generation, report the actual entry count without declaring it large or small. Ask whether it is acceptable unless that exact count or sizing rule was already approved. Never resize the dataset on the assistant's judgment.
+4. Estimate dataset size when practical. After generation, report the actual entry count without declaring it large or small. Ask whether it is acceptable unless that count or sizing rule was already approved or sizing decisions were delegated. Do not resize without approval or delegation.
 5. Inspect representative entries offline. Do not submit them manually to the application.
 
 **Exit gate:** the dataset matches the agreed question, its size is accepted, and every judge is intentional and runnable.
