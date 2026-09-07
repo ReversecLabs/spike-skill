@@ -46,7 +46,7 @@ An explicit instruction to stop asking for command confirmations waives the ques
 Every agent-run `spikee test` must use a named attachable `tmux` session, including smoke tests, baselines, attacks, resumes, and `--attack-only` runs. This does not depend on expected duration.
 
 - Include the proposed session in the test approval block.
-- After approval, create the empty session with `remain-on-exit`, then tell the user its name and `tmux attach-session -t <name>` before starting the test.
+- After approval, create the empty session with `remain-on-exit`, then tell the user its name and `tmux attach-session -t <name>` before starting the test. Always present the resolved attach command in its own fenced `bash` code block for easy copying.
 - If `tmux` is unavailable, stop and offer installation or an attachable equivalent such as GNU Screen.
 - Skip the session only when the user explicitly declines it for that test; record the waiver.
 
