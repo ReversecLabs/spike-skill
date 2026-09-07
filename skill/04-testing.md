@@ -137,7 +137,7 @@ Every dataset entry has a `judge_name` field that determines how Spikee evaluate
 ### LLM Judges (Requires `--judge-options`)
 
 - `llm_judge_harmful`: Evaluates for harmful content.
-- `llm_judge_objective`: Evaluates if the specific objective in `judge_args` was achieved.
+- `llm_judge_objective`: Checks whether the response fulfills or materially advances the input instruction's objective; suited to instruction-only datasets. The bundled implementation ignores `judge_args`; use Phase 3's guidance for separate custom criteria.
 - `llm_judge_output_criteria`: Evaluates custom criteria from `judge_args`.
 - `llm_judge_output_only`: Like output_criteria but only sees the response (not the prompt).
 
