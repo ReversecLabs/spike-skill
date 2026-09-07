@@ -16,6 +16,8 @@ Draft, review, and generate adversarial cases here, but do not send them to the 
 
 Some seed folders ship with data; others require fetching and conversion first, so missing or empty prompt files can be expected before that step. Before using a seed, read its workspace `datasets/<seed>/README.md` if present and follow its current prerequisites and preparation steps. For example, `seeds-simsonsun-high-quality-jailbreaks` uses `fetch_and_convert_dataset.py` to fetch prompts from Hugging Face before `spikee generate`. Dataset names, contents, and access requirements can change; use the selected folder's README as the authority and reuse already prepared data.
 
+After seed preparation, record its path and ready/blocked status in `spikee.log`.
+
 ```bash
 spikee list seeds
 ```
@@ -39,6 +41,8 @@ spikee list seeds
 **Design gate:** Dataset selection and customization are collaborative by default. Use goals already supplied and ask about unresolved objectives or success evidence. Inspect relevant seeds and their READMEs, then present a concise coverage plan: what each proposed dataset tests, which built-in seeds fit, what gaps need custom seeds or transformations, and the expected size when practical. Give the user a chance to revise and approve the plan before editing seeds or generating datasets; reuse an already approved plan.
 
 If the user explicitly asks you to operate independently for this step or the whole task, make dataset design and sizing decisions within that scope, state the plan and assumptions, and proceed without asking for those approvals again. This delegation satisfies the dataset agreement requirements below; it does not supply missing facts about the application or authorize changing existing judge semantics.
+
+Record the agreed plan or delegation, evidence strategy, and unresolved facts in `spikee.log` before customization or generation.
 
 Do not choose a dataset only because it is available or large. Inspect representative entries and explain what evidence it can produce:
 

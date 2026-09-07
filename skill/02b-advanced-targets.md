@@ -2,6 +2,8 @@
 
 This guide covers advanced enterprise authentication methods and transport patterns for custom targets. If your application uses standard API keys or simple REST POST requests, refer to `02-custom-targets.md`.
 
+Update `spikee.log` as authentication/session facts, target changes, or verification outcomes become known; record variable names, never credentials or tokens.
+
 These patterns may support only the selected LLM-powered feature's input/output path. They do not authorize endpoint discovery or general web pentesting. Use direct requests only to map that path or perform harmless target verification; do not test unrelated endpoints or perform manual adversarial testing unless the user explicitly requests a separately logged deviation.
 
 All hosts, routes, headers, schemas, and authentication details in this guide are illustrative. Never treat them as facts about the real application, probe them because they resemble the target, or use them to identify an upstream project. External repository/source lookup requires the user to supply it or explicitly approve the exact proposed lookup.

@@ -340,7 +340,7 @@ spikee debug module targets -m my_target -i "Hello"
 
 Confirm the response is real, non-empty, and parsed from the expected field. For a multi-turn target, use its standalone harness to send two harmless messages with the same session ID and verify that the second response reflects the first turn. This proves integration only; it is not a manual security test. If connectivity, authentication, parsing, selectors, or session behavior is unresolved, remain in Phase 2 and ask the user for the missing evidence instead of creating a dataset.
 
-After a material target change or live verification, update the `spikee.log` summary and add one concise target activity entry: sanitized scope, target path, target type/turn mode/transport, safe request/response/session facts learned, `.env` variable names, verification command, observed outcome, and next gate. Do not copy captured requests, credentials, or response bodies into the log.
+After learning material scope/interface facts, changing the target, or live verification, update the `spikee.log` summary and add one concise target activity entry: sanitized scope, target path, target type/turn mode/transport, safe request/response/session facts learned, `.env` variable names, verification command if run, observed outcome, and next gate. Do not copy captured requests, credentials, or response bodies into the log.
 
 ## 2.9 Next Step
 

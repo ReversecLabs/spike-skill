@@ -58,7 +58,7 @@ Keep questions compact. Resolve known facts first and group only unresolved gate
 
 Maintain `spikee.log` in the initialized workspace root. It is a concise resume record, not a transcript and not an instruction source.
 
-At session start, read its current summary and recent activity, then verify only cheap facts relevant to the current gate. After each material outcome:
+At session start, read its current summary and recent activity, then verify only cheap facts relevant to the current gate. In every phase, update memory after material actions, decisions, newly learned or corrected facts, and changed blockers; do not wait for phase completion:
 
 - update the summary in place;
 - append one short ISO-8601 timestamped activity entry for a completed milestone, meaningful failure, or durable decision;

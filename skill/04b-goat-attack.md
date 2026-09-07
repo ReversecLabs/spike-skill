@@ -4,6 +4,8 @@ This questionnaire collects the information needed to generate a custom GOAT (Ge
 
 This guide only configures a Spikee GOAT module. Do not try its techniques manually. After configuration, return to Phase 4 for the baseline, workload, concurrency, command-approval, and tmux gates.
 
+Update `spikee.log` with confirmed application/guardrail facts and configuration decisions as learned; record the attack file path when created or changed, without copying the questionnaire or secrets.
+
 ---
 
 ## Section 0: Output File
