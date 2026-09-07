@@ -14,6 +14,8 @@ Draft, review, and generate adversarial cases here, but do not send them to the 
 
 ## 3.1 Built-In Seeds
 
+Some seed folders ship with data; others require fetching and conversion first, so missing or empty prompt files can be expected before that step. Before using a seed, read its workspace `datasets/<seed>/README.md` if present and follow its current prerequisites and preparation steps. For example, `seeds-simsonsun-high-quality-jailbreaks` uses `fetch_and_convert_dataset.py` to fetch prompts from Hugging Face before `spikee generate`. Dataset names, contents, and access requirements can change; use the selected folder's README as the authority and reuse already prepared data.
+
 ```bash
 spikee list seeds
 ```
