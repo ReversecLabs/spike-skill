@@ -33,6 +33,7 @@ Adversarial prompts and attacks normally flow through an agreed Spikee dataset, 
 
 - Direct HTTP, WebSocket, browser, or `spikee debug` interaction is allowed only to understand the interface and send harmless inputs needed to build or prove a target.
 - Do not manually jailbreak the application, improvise payloads, or substitute the assistant's interactions for a Spikee run.
+- Phase 3's judge-only smoke check is allowed via `spikee debug module judges`: pass synthetic prompt/response fixtures to the configured judge without calling the target. Run it normally without tmux; it is separate from Phase 4 testing.
 - If Spikee cannot express a required test, remain in the phase that owns the gap and propose a target, seed, plugin, attack, or judge change.
 - Perform manual or out-of-band testing only when the user explicitly requests it. Confirm the narrow scope, keep its evidence separate from Spikee metrics, and record a sanitized `manual deviation` in `spikee.log`.
 
@@ -131,7 +132,7 @@ Read `03-dataset-generation.md`.
 
 1. Before customizing seeds or generating datasets, clarify any unresolved goals and present a coverage plan: the question each dataset answers, suitable built-in seeds, and gaps requiring customization. Get the user's agreement unless they have explicitly delegated dataset decisions for this step or the whole task; then choose within that scope and state the plan. Follow Phase 3's design gate.
 2. Preserve existing judge names and arguments. Never replace an LLM judge with regex/canary, invent judge criteria, or otherwise change evaluation semantics without explicit user approval.
-3. If an LLM judge is required, agree the provider and model. For hosted providers, name the `.env` key; for local providers, obtain the endpoint/model and supported concurrency. If access is unavailable or unclear, stop and offer options. Regex is a last-resort substitute only when the user accepts the changed semantics.
+3. If an LLM judge is required, agree the provider and model, then run Phase 3's positive/negative judge smoke check. For hosted providers, name the `.env` key; for local providers, obtain the endpoint/model and supported concurrency. If access is unavailable or unclear, stop and offer options. Regex is a last-resort substitute only when the user accepts the changed semantics.
 4. Estimate dataset size when practical. After generation, report the actual entry count without declaring it large or small. Ask whether it is acceptable unless that count or sizing rule was already approved or sizing decisions were delegated. Do not resize without approval or delegation.
 5. Inspect representative entries offline. Do not submit them manually to the application.
 

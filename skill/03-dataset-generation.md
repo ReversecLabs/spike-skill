@@ -424,7 +424,7 @@ When a dataset requires an LLM judge, **ask the user which provider and model th
 1. Run `spikee list providers -d` and show the relevant installed choices.
 2. Ask whether they want a hosted provider or a local inference endpoint.
 3. For a hosted provider, tell them which API-key variable to add to the workspace `.env`; do not put the key in the dataset or source code.
-4. For local inference, ask for the endpoint and model. Spikee supports options such as Ollama (`OLLAMA_URL`), llama.cpp (`LLAMACPP_URL`), and other OpenAI-compatible endpoints via the `custom` provider (`CUSTOM_API_URL` and, when required, `CUSTOM_API_KEY`).
+4. For local inference, ask for the endpoint and model. Spikee supports options such as Ollama (`OLLAMA_URL`), llama.cpp (`LLAMACPP_URL`), and other OpenAI-compatible endpoints via the `custom` provider (`CUSTOM_API_URL`, `CUSTOM_API_KEY`). For a server needing no authentication, use `CUSTOM_API_KEY=local-noauth` to satisfy the OpenAI client.
 5. Confirm the provider/model passed through `--judge-options`, for example `--judge-options "openai/gpt-4o-mini"`.
 6. For a local judge endpoint, ask how many parallel requests or processing slots it supports and carry that fact into Phase 4. Explain that Spikee test concurrency can otherwise exceed the server's capacity, causing requests to queue, run sequentially, or time out. Do not alter the judge to avoid this constraint.
 
@@ -433,6 +433,20 @@ For a supplied local endpoint, follow Phase 1's one-request model-discovery path
 If the user cannot provide LLM-judge access or the provider choice remains unclear, stop and present these options: configure a hosted provider, use a local endpoint, postpone the run, or explicitly redesign the evaluation. When replacing a required or existing semantic LLM judge, suggest `regex` only as a last resort when success truly has a reliable textual pattern; warn that it changes the evaluation semantics and can miss or misclassify results, and do not make the substitution without explicit approval. This does not prevent choosing `regex` for a new test whose success condition is inherently pattern-based.
 
 LLM judges add model calls for judged responses. A basic one-attempt run commonly needs one judging call per entry, while retries, multiple attempts, or dynamic attacks can produce additional judged responses. State the counts and likely cost/runtime implications and let the user decide whether they are acceptable; do not label them large or small. This is not a reason to change the selected judge automatically. Final `--threads` selection belongs to Phase 4 and must be agreed with the user.
+
+### Judge-Only Smoke Check
+
+Before leaving dataset design, test each distinct LLM judge/configuration with two synthetic prompt/response pairs: one clearly satisfying its actual criterion (`True`), one clearly failing it (`False`). Use the planned `judge_name`, `judge_args`, and explicit provider/model; vary fixtures for materially different criteria. For example, a protected-record judge should accept a synthetic disclosure matching the agreed record facts and reject a refusal. Do not change criteria merely to make the check pass.
+
+From the workspace root with its venv active, use `spikee debug module judges` once per fixture; the CLI loads the workspace `.env`. Resolve and preview both commands under the normal command approval/delegation rule:
+
+```bash
+spikee debug module judges -m <judge_name> \
+  -i '<synthetic prompt>' -o '<synthetic response>' \
+  --judge-args '<actual judge_args>' --judge-options '<provider/model>'
+```
+
+`-o` is the response text, not a file path. Check the printed `Judge Result` against the expected `True` or `False`; a zero exit status alone is insufficient. This calls only the judge LLM, never the target; no custom harness, generated dataset, `spikee test`, or tmux is needed. Fix wiring/parsing errors or unexpected verdicts before proceeding. Record the outcome in `spikee.log` and reuse it while judge code, criteria, and provider/model configuration are unchanged. Two passing cases check basic wiring and behavior, not overall judge accuracy.
 
 ### Summary: Judge Selection Cheatsheet
 

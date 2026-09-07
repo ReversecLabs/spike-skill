@@ -108,6 +108,8 @@ For llama.cpp:
 
 If the user doesn't plan to use LLM judges or attacks (e.g., only using `canary`/`regex` judges and no dynamic attacks), **no provider configuration is needed** — skip to 1.4.
 
+**Local endpoint gotcha:** OpenAI-compatible clients can require a non-empty key even when the server needs no authentication. For Spikee's `custom` provider against such a server, set `CUSTOM_API_KEY=local-noauth`; use the real key when authentication is required.
+
 Edit `.env` in the workspace root and add or update only the relevant keys without overwriting other entries:
 ```bash
 # Example: using OpenAI for judges and Bedrock for attacks
