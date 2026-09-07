@@ -331,4 +331,4 @@ At launch, update the `spikee.log` summary and add one concise test activity ent
 
 ## 4.8 Next Step
 
-Once your test run completes, proceed to **Phase 5** to analyse the results.
+Once your test run completes, read `05-results-analysis.md` and first run `spikee results analyze --result-file <exact-result-path>` without tmux for the high-level summary. Present its overview before writing custom analysis scripts. Use scripts or direct JSONL inspection for specific questions, debugging, or analysis the built-in command cannot provide.
