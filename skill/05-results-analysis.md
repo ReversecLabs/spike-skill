@@ -24,7 +24,7 @@ If `spikee results analyze` fails or cannot parse an artifact, report that failu
 
 Analyse the small static baseline before recommending a full or dynamic run. First verify that target responses are valid, judges executed as intended, errors are acceptably low, and the sample represents the relevant dataset categories. Do not treat an error-heavy or poorly covered run as evidence of safety or vulnerability.
 
-When the gate fails, fix the cause and repeat the small baseline:
+When the gate fails, explain the evidence and propose work in the owning phase below. Apply the [phase handoff gate](SKILL.md#collaboration-and-phase-gates) before making changes or repeating the baseline; do not automatically turn analysis into another run:
 
 - **Phase 1:** wrong workspace, virtual environment, or Spikee installation.
 - **Phase 2:** target integration, authentication, response shape, or single-/multi-turn behaviour.
@@ -221,7 +221,7 @@ spikee results convert-to-excel --result-file results/results_my_target_12345678
 
 ## 5.10 Iteration Guide
 
-Based on results, decide next steps:
+Based on results, recommend next steps using the table below. These are proposals, not instructions to execute automatically. Present the findings, ask which follow-up the user wants, and wait unless explicit autopilot covers it. If no follow-up is requested, finish with the findings and leave the workspace ready to resume.
 
 | Observation | Action |
 |---|---|

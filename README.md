@@ -14,6 +14,8 @@ When loaded into your AI coding agent, this skill enables it to:
 
 The skill includes the full spikee source code and documentation as a submodule, so the agent can read base class contracts, sample implementations, and reference docs on demand.
 
+The workflow is collaborative by default: the agent inspects the current phase, clarifies unresolved decisions, completes agreed work, and checks in before moving to another phase or iteration. Passing a technical check does not authorize the rest of the assessment. Explicitly request autopilot to delegate phase progression and routine decisions within the agreed scope and limits.
+
 ## Installation
 
 ### Pi

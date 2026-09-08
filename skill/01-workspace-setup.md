@@ -139,11 +139,13 @@ Use `spikee list targets -d` when choosing a target, `spikee list seeds -d` when
 
 Spikee is primarily built to help pentesters test **LLM-powered applications** — chatbots, agents, RAG systems, copilots, and any product that wraps an LLM behind application logic. In most engagements, you'll need to write a **custom target** that tells spikee how to talk to the application's endpoints. This is where the skill helps most.
 
-**Most likely: proceed to Phase 2** — work with the user to understand their application's API and write a custom target for it.
+Summarize setup status and apply the [phase handoff gate](SKILL.md#collaboration-and-phase-gates): propose the next phase and wait for agreement unless explicit autopilot covers it.
+
+**Most likely: propose Phase 2** — work with the user to understand their application's API and write a custom target for it.
 
 Less common scenarios:
 
 | Scenario | What to do |
 |---|---|
-| Testing a raw LLM inference endpoint directly | Skip to **Phase 3** — use the built-in `llm_provider` target (no custom code needed) |
-| Testing a guardrail or content filter in isolation | Proceed to **Phase 2** — write a guardrail target (returns boolean) |
+| Testing a raw LLM inference endpoint directly | Propose **Phase 3** — use the built-in `llm_provider` target (no custom code needed) |
+| Testing a guardrail or content filter in isolation | Propose **Phase 2** — write a guardrail target (returns boolean) |

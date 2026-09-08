@@ -12,6 +12,8 @@ This guide, `spikee list attacks -d`, and examples in the initialized workspace 
 
 ## Mandatory Preview and Attachable Session for `spikee test`
 
+Apply the [collaboration and delegation rules](SKILL.md#collaboration-and-phase-gates) to approval questions below. Reuse explicit authorization or scoped autopilot instead of asking again; always preview the command and workload, and stop for unresolved limits outside the delegation. Passing a baseline does not itself authorize scaling or adding attacks.
+
 Before execution, show the fully resolved test command without placeholders or secrets and propose a unique session such as `spikee-baseline-20260904-143000`. Ask: **“Would you like to run this command yourself, or should I run it in tmux session `<name>`?”**
 
 - If the user will run it, wait for their result.
@@ -333,4 +335,4 @@ After exit, update that same execution record with finish time, exit status, `co
 
 ## 4.8 Next Step
 
-Once your test run completes, read `05-results-analysis.md` and first run `spikee results analyze --result-file <exact-result-path>` without tmux for the high-level summary. Present its overview before writing custom analysis scripts. Use scripts or direct JSONL inspection for specific questions, debugging, or analysis the built-in command cannot provide.
+Once the test completes, report its execution status and exact result path, then propose **Phase 5** analysis under the [phase handoff gate](SKILL.md#collaboration-and-phase-gates). Wait for agreement unless analysis was already explicitly requested or autopilot covers it. Once authorized, read `05-results-analysis.md` and first run `spikee results analyze --result-file <exact-result-path>` without tmux. Present its overview before writing custom analysis scripts. Use scripts or direct JSONL inspection for specific questions, debugging, or analysis the built-in command cannot provide.

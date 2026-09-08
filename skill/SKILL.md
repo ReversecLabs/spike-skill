@@ -10,17 +10,32 @@ metadata:
 
 # Spikee Pentesting
 
-Use Spikee to generate datasets, test an LLM application, and analyse the results. Resume at the nearest unmet gate; do not restart completed work.
+Use Spikee to generate datasets, test an LLM application, and analyse the results. Work collaboratively by default. Identify the current phase from the user's request and existing evidence; do not restart completed work or automatically execute the remaining phases.
+
+## Collaboration and Phase Gates
+
+**A passed technical gate means ready to discuss the next phase, not permission to start it.**
+
+1. **Orient:** Read `spikee.log`, inspect relevant existing artifacts, and identify the current phase, completed prerequisites, and unresolved decisions. Do this focused inspection before asking the user what is already discoverable.
+2. **Agree the work:** Briefly explain the current state and propose the concrete action for this phase. Ask only decision-relevant questions and wait for the user's answer before starting work they have not already authorized. A specific request to perform that action is sufficient; do not reconfirm it.
+3. **Execute within scope:** Complete the agreed phase work and its required checks. Do not silently add later phases, broader coverage, stronger attacks, or another test run.
+4. **Check in at the handoff:** Report the outcome and evidence, identify the next phase and proposed action, and ask whether to proceed, revise, or stop. Wait for a reply before entering it. Combine this with the next phase's design or command approval when useful; do not create duplicate approval rounds. Silence and a progress update are not approval.
+
+These gates also apply when returning to an earlier phase or iterating after results. A broad request such as “test this app” starts a collaborative assessment; it does not authorize an unattended run through all five phases. “Continue” approves the concrete next step under discussion, not all remaining phases.
+
+**Autopilot is opt-in:** If the user explicitly says “go autopilot,” “work autonomously through the assessment,” or equivalent, proceed through phase handoffs and make routine decisions within that delegation without asking again. Record the mode, scope, limits, and user decision in `spikee.log`; if no narrower scope is given, apply it to the current assessment only. Keep reporting phase outcomes and next actions. Still check technical prerequisites and stop for missing facts, unresolved traffic/cost limits, or actions outside the delegation; do not invent them. Respect explicit requirements such as approval to change existing judge semantics, execution logging, and attachable test sessions. Return to check-ins when the delegated scope ends or the user requests them.
+
+Phase delegation and command delegation are separate: “run this command” or “stop asking about commands” does not waive phase check-ins. Autopilot that delegates execution also covers routine command confirmations within its scope; exact command previews and all execution safeguards still apply.
 
 ## Work Directly
 
-Take the shortest documented path through the current gate.
+Take the shortest documented path through the agreed work in the current phase, following the collaboration gates above.
 
 Keep the workspace lean: create only files and configuration needed for the current task; avoid unused examples, placeholders, and redundant artifacts.
 
 1. Treat facts the user already supplied—workspace, provider, URL, port, model, credentials, target behavior, and limits—as the working configuration. Do not ask for them again or verify them repeatedly without a concrete reason.
 2. Read `spikee.log`, inspect only the relevant artifacts, and read only the current phase guide.
-3. Perform the minimum check or action needed to cross the gate. Once it succeeds, advance. Do not continue checking the same fact.
+3. Perform the minimum authorized check or action needed to satisfy the technical gate. Once it succeeds, report the result and follow the phase handoff gate. Do not continue checking the same fact.
 4. Debug only after an observed error, contradictory evidence, or a genuine ambiguity blocks progress. Show the failure, form one specific hypothesis, and inspect only the relevant layer.
 
 Do not pre-debug. Avoid broad environment inventories, recursive source scans, speculative dependency or hardware checks, several endpoint variants, and inference calls made only to prove that a configured provider might work.
@@ -85,6 +100,7 @@ Use this compact shape and add only fields that help the next session:
 - Credentials: <.env variable names and configured/needed status>
 - Dataset/Judges: <paths; entry count and size decision; judge/provider>
 - Command mode: <confirmation policy and scope>
+- Collaboration mode: <check-ins by default; or explicit autopilot delegation, scope, limits, and expiry>
 - Concurrency: <threads and known target/judge/attack-model limits>
 - Last run: <mode; attempt ceiling; session; result path; status>
 - Current phase / next gate: <phase / gate>
@@ -102,7 +118,7 @@ Use this compact shape and add only fields that help the next session:
 
 ## Workflow
 
-For a narrow request, enter the relevant phase and verify only its prerequisites. For an end-to-end assessment, follow the phases in order. Update `spikee.log` at each handoff.
+For a narrow request, enter the relevant phase and verify only its prerequisites. For an end-to-end assessment, follow the phases in order with the collaboration gates above. Exit gates below are technical readiness checks, not automatic transitions. Update `spikee.log` at each handoff with the outcome and whether the proposed next action is awaiting agreement or covered by delegation.
 
 ### Phase 1 — Runtime and Workspace
 
@@ -168,7 +184,7 @@ Read `05-results-analysis.md`.
 3. Offer HTML output or the loopback-bound web UI when visual exploration helps.
 4. Route runtime/workspace failures to Phase 1, target failures to Phase 2, coverage/judge problems to Phase 3, and sound baselines needing stronger attempts to Phase 4.
 
-The workflow is circular. A new hypothesis may require a revised target or dataset, a new matching baseline, another attack, and fresh analysis. Re-enter the owning phase and revalidate affected downstream gates.
+The workflow is circular. A new hypothesis may require a revised target or dataset, a new matching baseline, another attack, and fresh analysis. Present the finding and proposed next action, then apply the collaboration gate before re-entering the owning phase. Revalidate affected downstream gates within the agreed work; do not start another cycle automatically.
 
 ## Reference Order
 

@@ -344,4 +344,4 @@ After learning material scope/interface facts, changing the target, or live veri
 
 ## 2.9 Next Step
 
-Once the target passes the live verification above, proceed to **Phase 3** to agree and generate a dataset with the user.
+Once the target passes live verification, summarize what was proven and propose **Phase 3** to design the dataset and judge. Apply the [phase handoff gate](SKILL.md#collaboration-and-phase-gates): wait for agreement unless explicit autopilot covers the transition. A working target alone does not authorize dataset creation.

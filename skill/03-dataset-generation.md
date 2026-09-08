@@ -505,4 +505,4 @@ After generating or materially revising a dataset, also update the `spikee.log` 
 
 ## 3.9 Next Step
 
-Once you have a generated dataset in `datasets/` and its size is accepted, proceed to **Phase 4** to run tests. Every `spikee test` must use Phase 4's workload approval and mandatory named attachable session unless the user explicitly opts out for that run.
+Once the dataset is generated and its size accepted, summarize coverage, entry count, and judge readiness, then propose **Phase 4**. Apply the [phase handoff gate](SKILL.md#collaboration-and-phase-gates); dataset approval alone does not authorize testing. Combine the handoff with Phase 4's workload and command approval when practical. Explicit autopilot may cover the transition and run decisions within its limits; every agent-run `spikee test` still requires the named attachable session unless the user explicitly opts out for that run.
