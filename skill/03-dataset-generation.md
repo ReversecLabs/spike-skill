@@ -499,7 +499,9 @@ class MyEncoder(BasicPlugin):
 
 > Start with `plugins/sample_plugin.py` in the initialized workspace and the official custom-plugin guide. Inspect `spikee-src/spikee/templates/basic_plugin.py` or a built-in plugin only for an unresolved contract or debugging need.
 
-After generating or materially revising a dataset, update `spikee.log` with the question the run is intended to answer, source seed and generated dataset paths, whether entries are plain objectives, complete prompts, or composed prompts, judge/provider decisions, sanitized generation command, actual entry count, the user's size decision, brief QA outcome, and next gate. Keep dataset content in its artifact rather than copying entries into the log.
+Every agent-run `spikee generate` has a mandatory audit gate. After the exact command is authorized and immediately before dispatch, write a `starting` record in `spikee.log` with the timestamp, actor, working directory, and full resolved CLI. If that write fails, do not run the command. After exit, update the same record with finish time, exit status, and generated dataset path; repeat this for every retry. Secret values remain absent or redacted.
+
+After generating or materially revising a dataset, also update the `spikee.log` summary/activity with the question the run is intended to answer, source seed and generated dataset paths, whether entries are plain objectives, complete prompts, or composed prompts, judge/provider decisions, actual entry count, the user's size decision, brief QA outcome, and next gate. The mandatory full CLI belongs in `Executions`; do not duplicate it in `Activity`. Keep dataset content in its artifact rather than copying entries into the log.
 
 ## 3.9 Next Step
 

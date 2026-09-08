@@ -16,6 +16,8 @@ The CLI subcommand is `analyze` (American spelling): `spikee results analyze`. T
 
 Direct inspection of the result JSONL is also allowed and often necessary. Use ordinary read-only tools such as `jq`, `rg`, or a small parsing script for specific questions, individual prompt/response review, error diagnosis, severity assessment, validation of judge decisions, or calculations not provided by Spikee. Prefer `spikee results extract` when its standard categories already express the requested filter. State which files and filters a manual answer used, distinguish custom calculations from Spikee's metrics, and never edit the original result artifact in place.
 
+Preserve result artifacts by default. If the user explicitly asks to edit, replace, move, archive, or delete a result—including stale results—treat it as an audited mutation. After any required authorization and immediately before the change, add a `starting` record under `Executions` in `spikee.log` with the timestamp, actor, operation, exact source/destination paths, reason, and full command or action. If the log write fails, do not mutate the result. Afterward, update the same record with finish time and `completed` or `failed`; state whether the original remains recoverable. Never infer permission to clean up results.
+
 If `spikee results analyze` fails or cannot parse an artifact, report that failure and investigate the JSONL directly instead of abandoning the analysis. Keep the fallback clearly labelled; do not present manually reconstructed numbers as command output.
 
 ## Analysis Gate and Workflow Routing

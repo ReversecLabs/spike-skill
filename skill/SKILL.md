@@ -43,6 +43,8 @@ Before any Spikee CLI command, resolve and show the exact command without secret
 
 An explicit instruction to stop asking for command confirmations waives the question for its stated scope, or the current task when no scope is given. Continue to print every exact command before execution. Record the waiver and scope in `spikee.log`.
 
+For every agent-run `spikee generate` and `spikee test`, enforce this order: **preview → authorization → pre-execution log → execution → outcome update**. After authorization and immediately before dispatch, add a `starting` record to `spikee.log` containing the ISO timestamp, `actor=agent`, working directory, and the full resolved CLI exactly as it will run: executable plus every argument and option. Never omit non-secret arguments. Secret values must remain absent or redacted; keep them in `.env`. This write is an execution precondition: if it fails, stop and do not run the command. An autonomy or confirmation waiver does not waive logging. Every retry and every changed command is a separate execution and needs its own record. After exit, update that same record with the finish timestamp, exit status, `completed` or `failed`, and generated dataset or result path. Do not postpone this until a later phase.
+
 Every agent-run `spikee test` must use a named attachable `tmux` session, including smoke tests, baselines, attacks, resumes, and `--attack-only` runs. This does not depend on expected duration.
 
 - Include the proposed session in the test approval block.
@@ -63,11 +65,12 @@ At session start, read its current summary and recent activity, then verify only
 
 - update the summary in place;
 - append one short ISO-8601 timestamped activity entry for a completed milestone, meaningful failure, or durable decision;
-- record observed outcomes only, including who ran material commands and sanitized commands or artifact paths;
+- keep every executed `spikee generate` and `spikee test` in `Executions`; never compact these records away;
+- record observed outcomes in `Activity`; use `Executions` for authorized commands that are starting or have finished;
 - record `.env` variable names and status, never secret values;
-- correct, redact, deduplicate, or compact old entries when needed.
+- correct or redact execution records when needed, but preserve each execution; deduplicate or compact other old entries when useful.
 
-Do not log chain-of-thought, chat transcripts, routine reads/listings, raw requests, full prompts/responses, dataset contents, result contents, or merely proposed commands. For an existing artifact with unknown creation time, record the time first observed and say its creation time is unknown. Do not commit or share `spikee.log` unless the user asks.
+Do not log chain-of-thought, chat transcripts, routine reads/listings, raw requests, full prompts/responses, dataset contents, result contents, or merely proposed commands. A command that has been authorized and is about to be dispatched is not merely proposed and must be logged as `starting`. For an existing artifact with unknown creation time, record the time first observed and say its creation time is unknown. Do not commit or share `spikee.log` unless the user asks.
 
 Use this compact shape and add only fields that help the next session:
 
@@ -87,10 +90,14 @@ Use this compact shape and add only fields that help the next session:
 - Current phase / next gate: <phase / gate>
 - Blockers: <none or concrete blocker>
 
+## Executions
+- <start timestamp> | agent | generate | starting | cwd=<path> | command=`<full resolved CLI with secrets absent/redacted>` | artifact=pending
+- <start timestamp>..<finish timestamp> | agent | test | completed; exit=0 | cwd=<path> | command=`<full resolved CLI with secrets absent/redacted>` | tmux=<name> | result=<path>
+
 ## Activity
 - <timestamp> | setup | Created .venv; installed Spikee <version>; initialized workspace.
 - <timestamp> | target | Created targets/<name>.py; harmless live probe passed.
-- <timestamp> | test | Ran <sanitized command> in tmux <name>; wrote <result path>.
+- <timestamp> | result mutation | Archived <exact source path> to <exact destination path>; user requested cleanup.
 ```
 
 ## Workflow
