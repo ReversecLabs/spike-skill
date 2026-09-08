@@ -14,7 +14,9 @@ Draft, review, and generate adversarial cases here, but do not send them to the 
 
 ## 3.1 Built-In Seeds
 
-Some seed folders ship with data; others require fetching and conversion first, so missing or empty prompt files can be expected before that step. Before using a seed, read its workspace `datasets/<seed>/README.md` if present and follow its current prerequisites and preparation steps. For example, `seeds-simsonsun-high-quality-jailbreaks` uses `fetch_and_convert_dataset.py` to fetch prompts from Hugging Face before `spikee generate`. Dataset names, contents, and access requirements can change; use the selected folder's README as the authority and reuse already prepared data.
+- Before using a seed, read its workspace `datasets/<seed>/README.md` if present; follow its current prerequisites/preparation. Names, contents, and access requirements can change; that README is authoritative.
+- Some seeds include data; others require fetching/conversion, so missing/empty prompt files may be expected. Reuse prepared data.
+- Example: `seeds-simsonsun-high-quality-jailbreaks` needs `fetch_and_convert_dataset.py` to fetch Hugging Face prompts before `spikee generate`.
 
 After seed preparation, record its path and ready/blocked status in `spikee.log`.
 
@@ -38,11 +40,13 @@ spikee list seeds
 
 ## Dataset Selection — Start with the Question
 
-**Design gate:** Dataset selection and customization are collaborative by default. Use goals already supplied and ask about unresolved objectives or success evidence. Inspect relevant seeds and their READMEs, then present a concise coverage plan: what each proposed dataset tests, which built-in seeds fit, what gaps need custom seeds or transformations, and the expected size when practical. Give the user a chance to revise and approve the plan before editing seeds or generating datasets; reuse an already approved plan.
+**Design gate:**
 
-If the user explicitly asks you to operate independently for this step or the whole task, make dataset design and sizing decisions within that scope, state the plan and assumptions, and proceed without asking for those approvals again. This delegation satisfies the dataset agreement requirements below; it does not supply missing facts about the application or authorize changing existing judge semantics.
-
-Record the agreed plan or delegation, evidence strategy, and unresolved facts in `spikee.log` before customization or generation.
+- Collaborate by default. Reuse supplied goals; ask about unresolved objectives/success evidence.
+- Inspect relevant seeds/READMEs. Propose each dataset's question, fitting built-ins, gaps requiring custom seeds/transforms, and expected size when practical.
+- Before seed edits or generation, let the user revise/approve the plan; reuse existing approval.
+- Explicit independence for this step/task delegates design and sizing within scope. State plan/assumptions and proceed without repeat approval. It neither supplies application facts nor authorizes existing judge-semantic changes.
+- Before customization/generation, log the plan or delegation, evidence strategy, and unresolved facts in `spikee.log`.
 
 Do not choose a dataset only because it is available or large. Inspect representative entries and explain what evidence it can produce:
 
@@ -139,7 +143,9 @@ spikee generate --seed-folder datasets/seeds-simsonsun-high-quality-jailbreaks \
 
 ## 3.3 Customizing Datasets for Your Assessment
 
-**Datasets must match the objectives of the specific assessment or test.** First inspect existing datasets and seeds, then agree the target behavior, assessment objective, relevant attack categories, and success evidence with the user. For access-control tests, use section 3.6's known-data strategy to agree how the judge will distinguish unauthorized access or actions from legitimate results. Reuse an existing dataset when it already fits; customize seeds only when coverage needs to change.
+- Match datasets to the assessment/test objective. Inspect existing datasets/seeds; agree target behavior, objective, attack categories, and success evidence.
+- For access-control tests, use section 3.6's known-data strategy to distinguish unauthorized access/actions from legitimate results.
+- Reuse fitting datasets; customize seeds only for coverage changes.
 
 When customization is needed, start by copying the closest existing seed folder:
 ```bash
@@ -334,11 +340,12 @@ spikee generate --seed-folder datasets/seeds-my-assessment --tag my-first-run
 
 ## 3.6 Evaluation Strategy — Choosing the Right Judge
 
-When writing custom instructions, **every instruction needs a judge** — you must decide *how* to determine if the attack succeeded. This is the most critical design decision in dataset creation. The wrong judge means false positives or missed detections.
-
-**Selection rule:** Use `canary` for a precise string/keyword or `regex` for a precise pattern when matching fully expresses the agreed success condition, including relevant exclusions. Otherwise, **an LLM judge is required**: this includes semantic meaning, contextual interpretation, paraphrases, ambiguity, and uncertainty about whether a pattern covers the complete condition. Do not approximate these cases with keyword lists, refusal-word detection, or a convenient regex. Explain the choice in the dataset design proposal and apply its approval/delegation gate.
-
-Before selecting exact matching, consider a successful output without the marker and an unsuccessful output containing it (for example, a quotation, refusal, or echoed prompt). If either would invalidate the verdict for the agreed objective and the complete distinction cannot be captured by the pattern, use an LLM judge. Uncertainty about facts such as record ownership still requires evidence from the user; an LLM cannot supply missing ground truth.
+- **Every custom instruction needs a judge.** Judge selection is critical: wrong criteria produce false positives or missed detections.
+- Use `canary` for exact strings/keywords or `regex` for precise patterns only when matching fully expresses agreed success and relevant exclusions.
+- **Require an LLM judge otherwise:** semantics, context, paraphrases, ambiguity, or uncertain pattern completeness. No keyword-list, refusal-word, or regex approximations.
+- Before accepting canary/regex, inspect the complete target input, including wrappers/transforms. Construct plausible failure responses (echo, refusal, quotation, fabricated data) and successes without a match; check whether the judge misclassifies them. Do this offline, not by sending manual attacks.
+- For disclosure tests, keep protected expected values out of attack inputs; request the resource using other identifiers. Matching must evidence disclosure, not repetition of supplied text. If false matches or missed successes cannot be avoided without changing the agreed objective, require an LLM judge with explicit criteria.
+- Explain the choice under the dataset design approval/delegation gate. Obtain missing ground truth, such as ownership, from the user; an LLM cannot supply it.
 
 ### The Decision Framework
 
@@ -387,7 +394,9 @@ These examples intentionally measure syntax emission only:
 
 **3. "Can I identify success by checking for known data from the target system?"**
 
-For access control, agree the permission boundary and evidence strategy before customizing or generating datasets. Briefly explain the options supported by known facts and what extra information would enable stronger checks. Ask only for missing information: the current user's allowed data/actions, other in-scope test accounts and IDs, known records or private markers, and observable action outcomes. For example: “A private marker in another test account enables an exact canary check; known records and ownership enable a contextual LLM judge. Which test accounts or records can you provide?” Apply the design gate's approval/delegation rule; autonomy cannot replace missing ground truth.
+- Before access-control dataset customization/generation, agree the permission boundary and evidence strategy under the design gate; autonomy cannot supply ground truth.
+- Explain options supported by known facts and information needed for stronger checks: private markers enable exact canary checks; known records/ownership enable contextual LLM judging.
+- Ask only for missing allowed data/actions, in-scope test accounts/IDs, known records/private markers, and observable action outcomes.
 
 | Available evidence | Strategy |
 |---|---|
@@ -434,7 +443,9 @@ For exact matching alone, use `canary` with `judge_args: "TEST-B-7Q9"`; use the 
 
 **Provider setup:** Agree the provider/model under the design gate; use `spikee list providers -d` only if a choice remains unresolved. Follow Phase 1 for credentials in `.env` and local model discovery; reuse recorded configuration. An unauthenticated `custom` endpoint still needs `CUSTOM_API_KEY=local-noauth`. Pass the model explicitly through `--judge-options '<provider/model>'`.
 
-Carry known provider concurrency limits and estimated judge-call costs into Phase 4's workload/`--threads` agreement; retries and attacks can add calls. If LLM access is unavailable, offer configuration or postponement; do not substitute regex/canary for the same semantic objective. If the user explicitly chooses a narrower, exactly measurable objective, document that change, apply the selection rule again, and label its results as answering the narrower question. It is not an equivalent fallback.
+- Carry known provider concurrency limits and estimated judge-call costs into Phase 4's workload/`--threads` agreement; retries/attacks can add calls.
+- Missing LLM access: offer configuration or postponement, never regex/canary for the same semantic objective.
+- User-chosen narrower exact objective: document the change, reapply judge selection, and label results as answering that narrower question—not an equivalent fallback.
 
 ### Judge Arguments and Output Contract — Gotcha
 
@@ -456,7 +467,10 @@ spikee debug module judges -m <judge_name> \
   --judge-args '<actual judge_args>' --judge-options '<provider/model>'
 ```
 
-`-o` takes response text, not a file path. Verify the printed `Judge Result`, not just exit status. Only the judge is called; no target, dataset generation, or tmux is needed. Resolve errors/unexpected verdicts before proceeding; do not weaken criteria to pass. Log the outcome in `spikee.log` and reuse it while judge code, criteria, and provider/model configuration are unchanged. This checks basic wiring and behavior, not overall accuracy.
+- `-o` accepts response text, not a file path. Check printed `Judge Result`, not only exit status.
+- Call only the judge; no target, dataset generation, or tmux. This checks basic wiring/behavior, not overall accuracy.
+- Resolve errors/unexpected verdicts before proceeding; never weaken criteria to pass.
+- Log the outcome in `spikee.log`; reuse while judge code, criteria, and provider/model configuration remain unchanged.
 
 > If this guide is insufficient, read `spikee-src/docs/09_judges.md` and inspect the initialized workspace's `judges/` examples. Read judge implementation source only to resolve an unanswered behavior or debug a mismatch.
 
@@ -502,10 +516,13 @@ class MyEncoder(BasicPlugin):
 
 > Start with `plugins/sample_plugin.py` in the initialized workspace and the official custom-plugin guide. Inspect `spikee-src/spikee/templates/basic_plugin.py` or a built-in plugin only for an unresolved contract or debugging need.
 
-Every agent-run `spikee generate` has a mandatory audit gate. After the exact command is authorized and immediately before dispatch, write a `starting` record in `spikee.log` with the timestamp, actor, working directory, and full resolved CLI. If that write fails, do not run the command. After exit, update the same record with finish time, exit status, and generated dataset path; repeat this for every retry. Secret values remain absent or redacted.
-
-After generating or materially revising a dataset, also update the `spikee.log` summary/activity with the question the run is intended to answer, source seed and generated dataset paths, whether entries are plain objectives, complete prompts, or composed prompts, judge/provider decisions, actual entry count, the user's size decision, brief QA outcome, and next gate. The mandatory full CLI belongs in `Executions`; do not duplicate it in `Activity`. Keep dataset content in its artifact rather than copying entries into the log.
+- **Hard gate for every agent-run `spikee generate`, including retries:** after authorization, log `starting` in `spikee.log` with timestamp, actor, working directory, exact runnable command, and brief purpose summary. Read back and verify before dispatch under [command logging](SKILL.md#commands-and-test-sessions). Incomplete/mismatched/missing records block execution; no condensed commands or summary-only placeholders. Omit/redact only secrets.
+- After exit, update the same record with finish time, exit status, and generated dataset path.
+- After generation/material revision, update summary/activity: assessment question, source seed/generated paths, entry form (plain objectives/complete/composed prompts), judge/provider decisions, actual count, user's size decision, brief QA outcome, next gate.
+- Keep the full CLI in `Executions`, not duplicated in `Activity`; keep dataset contents in their artifact, not the log.
 
 ## 3.9 Next Step
 
-Once the dataset is generated and its size accepted, summarize coverage, entry count, and judge readiness, then propose **Phase 4**. Apply the [phase handoff gate](SKILL.md#collaboration-and-phase-gates); dataset approval alone does not authorize testing. Combine the handoff with Phase 4's workload and command approval when practical. Explicit autopilot may cover the transition and run decisions within its limits; every agent-run `spikee test` still requires the named attachable session unless the user explicitly opts out for that run.
+- After generation and size acceptance, summarize coverage, count, and judge readiness; propose **Phase 4** under the [phase handoff gate](SKILL.md#collaboration-and-phase-gates).
+- Dataset approval alone does not authorize testing. Combine handoff/workload/command approval when practical; explicit autopilot may cover transitions/run decisions within limits.
+- Every agent-run `spikee test` still needs a named attachable session unless the user explicitly opts out for that run.

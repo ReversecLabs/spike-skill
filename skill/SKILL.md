@@ -10,24 +10,25 @@ metadata:
 
 # Spikee Pentesting
 
-Use Spikee to generate datasets, test an LLM application, and analyse the results. Work collaboratively by default. Identify the current phase from the user's request and existing evidence; do not restart completed work or automatically execute the remaining phases.
+- Use Spikee to generate datasets, test an LLM application, and analyse results.
+- Collaborate by default. Identify the current phase from the request and evidence; do not restart completed work or automatically run remaining phases.
 
 ## Collaboration and Phase Gates
 
 **A passed technical gate means ready to discuss the next phase, not permission to start it.**
 
-**Before the first change:** Unless explicit autopilot covers it, inspect the existing workspace without modifying it, then stop for a user decision. Do not create directories or a venv, install packages, initialize Spikee, edit configuration, or create/modify a target merely because these seem necessary to “test this app.” Present the proposed setup commands or target design and wait. Permission to inspect, a supplied URL, and tool access are not approval to implement. Reuse an explicit approval of those concrete actions; do not ask again.
+1. **Inspect:** Read `spikee.log` and relevant artifacts without modifying the workspace. Identify the phase, completed prerequisites, and unresolved decisions before asking for discoverable facts.
+2. **Agree:** State the current status and concrete proposal. Before creating directories/venvs, installing packages, initializing Spikee, editing configuration, or creating/modifying targets, present the commands/design and wait for approval unless explicitly covered by autopilot. Reuse explicit requests or approvals for those concrete actions.
+3. **Execute:** Complete agreed work and required checks. Do not silently add phases, coverage, stronger attacks, or test runs.
+4. **Handoff:** Report outcome/evidence, next phase, and proposed action. Ask whether to proceed, revise, or stop; wait for a reply. Combine with design/command approval where useful; avoid duplicate rounds.
 
-1. **Orient:** Read `spikee.log`, inspect relevant existing artifacts, and identify the current phase, completed prerequisites, and unresolved decisions. Do this focused inspection before asking the user what is already discoverable.
-2. **Agree the work:** Briefly explain the current state and propose the concrete action for this phase. Ask only decision-relevant questions and wait for the user's answer before starting work they have not already authorized. A specific request to perform that action is sufficient; do not reconfirm it.
-3. **Execute within scope:** Complete the agreed phase work and its required checks. Do not silently add later phases, broader coverage, stronger attacks, or another test run.
-4. **Check in at the handoff:** Report the outcome and evidence, identify the next phase and proposed action, and ask whether to proceed, revise, or stop. Wait for a reply before entering it. Combine this with the next phase's design or command approval when useful; do not create duplicate approval rounds. Silence and a progress update are not approval.
-
-These gates also apply when returning to an earlier phase or iterating after results. A broad request such as “test this app” starts a collaborative assessment; it does not authorize an unattended run through all five phases. “Continue” approves the concrete next step under discussion, not all remaining phases.
-
-**Autopilot is opt-in:** If the user explicitly says “go autopilot,” “work autonomously through the assessment,” or equivalent, proceed through phase handoffs and make routine decisions within that delegation without asking again. Record the mode, scope, limits, and user decision in `spikee.log`; if no narrower scope is given, apply it to the current assessment only. Keep reporting phase outcomes and next actions. Still check technical prerequisites and stop for missing facts, unresolved traffic/cost limits, or actions outside the delegation; do not invent them. Respect explicit requirements such as approval to change existing judge semantics, execution logging, and attachable test sessions. Return to check-ins when the delegated scope ends or the user requests them.
-
-Phase delegation and command delegation are separate: “run this command” or “stop asking about commands” does not waive phase check-ins. Autopilot that delegates execution also covers routine command confirmations within its scope; exact command previews and all execution safeguards still apply.
+- Apply these gates to earlier-phase returns and iterations too.
+- Inspection permission, a URL, tool access, silence, or a progress update is not implementation approval.
+- “Test this app” starts a collaborative assessment, not unattended execution of all five phases. “Continue” approves only the concrete next step discussed.
+- **Autopilot requires explicit delegation**, such as “go autopilot” or “work autonomously through the assessment.” Within scope, advance phases and make routine decisions without asking again.
+- Log autopilot mode, scope, limits, and user decision in `spikee.log`. Default scope: current assessment. Continue reporting phase outcomes and next actions.
+- Autopilot retains prerequisite checks, judge-change approvals, execution logging, and attachable sessions. Stop for missing facts, unresolved traffic/cost limits, or work outside scope; invent nothing. Resume check-ins when scope ends or the user requests them.
+- Command delegation (“run this command” / “stop asking about commands”) does not waive phase check-ins. Autopilot delegating execution covers routine command confirmations within scope; retain exact previews and execution safeguards.
 
 ## Work Directly
 
@@ -56,23 +57,39 @@ Adversarial prompts and attacks normally flow through an agreed Spikee dataset, 
 
 ## Commands and Test Sessions
 
-Before any Spikee CLI command or command that creates/modifies the runtime or workspace (`mkdir`, venv creation, package installation, configuration writes), resolve and show the exact command without secret values. By default, ask whether the user wants to run it or wants the agent to run it, then wait for the answer before dispatch. Do not bypass this gate by using Python, a script, or a file-editing tool instead of a shell command. Read-only local inspection may proceed to inform the proposal. A user's response to a displayed command or batch, such as “you run the commands,” authorizes that exact preview; do not ask again. Preview and confirm changed commands, added commands, and retries separately. Routine `spikee.log` updates required for already authorized work remain part of that work.
+- Before any Spikee CLI command or runtime/workspace mutation (`mkdir`, venv creation, installation, configuration writes), show the exact command without secrets. Ask who should run it; wait before dispatch.
+- The same gate applies to Python, scripts, and file-editing tools. Read-only local inspection may inform proposals; required `spikee.log` updates belong to already authorized work.
+- Approval of a displayed command/batch covers that exact preview; do not reconfirm. Preview and confirm changed/added commands and retries separately.
+- An explicit command-confirmation waiver covers its stated scope, or the current task if unspecified. Log the waiver/scope; still print every exact command before execution.
 
-An explicit instruction to stop asking for command confirmations waives the question for its stated scope, or the current task when no scope is given. Continue to print every exact command before execution. Record the waiver and scope in `spikee.log`.
+**Hard gate — every agent-run `spikee generate` and `spikee test`: preview → authorization → write and verify log → execution → outcome update.**
 
-For every agent-run `spikee generate` and `spikee test`, enforce this order: **preview → authorization → pre-execution log → execution → outcome update**. After authorization and immediately before dispatch, add a `starting` record to `spikee.log` containing the ISO timestamp, `actor=agent`, working directory, and the full resolved CLI exactly as it will run: executable plus every argument and option. Never omit non-secret arguments. Secret values must remain absent or redacted; keep them in `.env`. This write is an execution precondition: if it fails, stop and do not run the command. An autonomy or confirmation waiver does not waive logging. Every retry and every changed command is a separate execution and needs its own record. After exit, update that same record with the finish timestamp, exit status, `completed` or `failed`, and generated dataset or result path. Do not postpone this until a later phase.
+- Before dispatch, write `starting` under `Executions` in `spikee.log`: ISO timestamp, `actor=agent`, working directory, **exact runnable command** (executable, every argument, value, path, and required quoting), plus a brief purpose summary. For tests, include session manager/name and exact attach command.
+- No condensed commands, ellipses, unresolved placeholders, or summary-only records. The purpose summary supplements the command; it never replaces it.
+- Keep secrets in `.env`; omit/redact their values, never non-secret arguments.
+- Read back the saved record and verify the command matches the authorized command about to run. Missing, incomplete, mismatched, or unwritable record: **do not execute**. Logging afterward does not satisfy this gate.
+- Autonomy/confirmation waivers never waive logging. Each retry or changed command needs a separate verified record.
+- After exit, update the same record: finish timestamp, exit status, `completed`/`failed`, generated dataset/result path. Do not defer to a later phase.
 
 Every agent-run `spikee test` must use a named attachable `tmux` session, including smoke tests, baselines, attacks, resumes, and `--attack-only` runs. This does not depend on expected duration.
 
 - Include the proposed session in the test approval block.
 - After approval, create the empty session and run `tmux set-window-option -t <name> remain-on-exit on` **before** starting the test. Then tell the user its name and show the resolved `tmux attach-session -t <name>` in its own fenced `bash` code block.
-- Keep the session and final pane output available after success or failure. Never automatically run `kill-session`, `kill-window`, `kill-pane`, or other cleanup when the test exits. A non-zero exit is a reason to preserve the session for inspection, not close it. Remove it only when the user explicitly asks or says inspection is finished.
+- Preserve the session and final output after success or failure, including non-zero exits. No automatic `kill-session`, `kill-window`, `kill-pane`, or other cleanup. Remove only at the user's request or confirmation that inspection is finished.
 - If `tmux` is unavailable, stop and offer installation or an attachable equivalent such as GNU Screen.
 - Skip the session only when the user explicitly declines it for that test; record the waiver.
 
 Run all other commands normally without tmux, including `init`, `list`, `generate`, `debug`, `results`, `webui`, and help/version checks.
 
 Keep questions compact. Resolve known facts first and group only unresolved gate decisions. Do not drip-feed questions, repeat answered questions, or ask questions without a concrete decision behind them.
+
+## User-Facing Brevity and Evidence
+
+- Be brief: facts, relevant observations, next decision. No opinions, reactions (“interesting”), filler, repetition, or routine narration.
+- Give options with concrete pros/cons and evidence-based recommendations. Flag errors, pitfalls, hypotheses, and uncertainty clearly.
+- Report actual counts, units, known denominators, and run status. Distinguish judge verdicts from verified findings.
+- Never invent constraints or rationales. Separate defaults, user choices, observed limits, and unknowns.
+- Show required commands and attach instructions once. Expand only when requested or needed for an informed decision.
 
 ## Workspace Memory
 
@@ -87,7 +104,9 @@ At session start, read its current summary and recent activity, then verify only
 - record `.env` variable names and status, never secret values;
 - correct or redact execution records when needed, but preserve each execution; deduplicate or compact other old entries when useful.
 
-Do not log chain-of-thought, chat transcripts, routine reads/listings, raw requests, full prompts/responses, dataset contents, result contents, or merely proposed commands. A command that has been authorized and is about to be dispatched is not merely proposed and must be logged as `starting`. For an existing artifact with unknown creation time, record the time first observed and say its creation time is unknown. Do not commit or share `spikee.log` unless the user asks.
+- Never log chain-of-thought, transcripts, routine reads/listings, raw requests, full prompts/responses, dataset/result contents, or merely proposed commands. Authorized commands about to dispatch must be logged as `starting`.
+- For artifacts with unknown creation time, record first-observed time and mark creation time unknown.
+- Do not commit or share `spikee.log` unless requested.
 
 Use this compact shape and add only fields that help the next session:
 
@@ -109,8 +128,8 @@ Use this compact shape and add only fields that help the next session:
 - Blockers: <none or concrete blocker>
 
 ## Executions
-- <start timestamp> | agent | generate | starting | cwd=<path> | command=`<full resolved CLI with secrets absent/redacted>` | artifact=pending
-- <start timestamp>..<finish timestamp> | agent | test | completed; exit=0 | cwd=<path> | command=`<full resolved CLI with secrets absent/redacted>` | tmux=<name> | result=<path>
+- <start timestamp> | agent | generate | starting | cwd=<path> | command=`<exact runnable CLI; secrets absent/redacted>` | purpose=<brief explanation> | artifact=pending
+- <start timestamp>..<finish timestamp> | agent | test | completed; exit=0 | cwd=<path> | command=`<exact runnable CLI; secrets absent/redacted>` | purpose=<brief explanation> | tmux=<name> | attach=`tmux attach-session -t <name>` | result=<path>
 
 ## Activity
 - <timestamp> | setup | Created .venv; installed Spikee <version>; initialized workspace.
@@ -120,7 +139,9 @@ Use this compact shape and add only fields that help the next session:
 
 ## Workflow
 
-For a narrow request, enter the relevant phase and verify only its prerequisites. For an end-to-end assessment, follow the phases in order with the collaboration gates above. Exit gates below are technical readiness checks, not automatic transitions. Update `spikee.log` at each handoff with the outcome and whether the proposed next action is awaiting agreement or covered by delegation.
+- Narrow request: enter the relevant phase; verify only its prerequisites.
+- End-to-end assessment: follow phases in order under the collaboration gates. Exit gates establish readiness, not permission to advance.
+- At each handoff, log the outcome and next action's status: awaiting agreement or covered by delegation.
 
 ### Phase 1 — Runtime and Workspace
 
@@ -157,7 +178,7 @@ Read `02-custom-targets.md`; read `02b-advanced-targets.md` only for advanced au
 Read `03-dataset-generation.md`.
 
 1. Before customizing seeds or generating datasets, clarify any unresolved goals and present a coverage plan: the question each dataset answers, suitable built-in seeds, and gaps requiring customization. Get the user's agreement unless they have explicitly delegated dataset decisions for this step or the whole task; then choose within that scope and state the plan. Follow Phase 3's design gate.
-2. Choose `canary` for an exact string or keyword, or `regex` for a precise pattern, only when that match completely determines the agreed success condition. Use these deterministic judges when sufficient. For semantic, contextual, ambiguous, or incompletely matchable success conditions, an LLM judge is required; a keyword heuristic is not a substitute. Preserve existing judge names and arguments unless the user explicitly approves the proposed change.
+2. Use `canary` (exact string/keyword) or `regex` (precise pattern) only when matching fully determines agreed success. Check the complete input and plausible failure/success responses offline; echoes or refusals must not masquerade as success. Keep disclosure markers out of attack inputs. Require an LLM judge for semantic/contextual/ambiguous criteria or unavoidable misclassification; no keyword heuristics. Preserve existing judge names/arguments unless the user explicitly approves changes.
 3. When an LLM judge is required, agree the provider and model, then run Phase 3's positive/negative judge smoke check. For hosted providers, name the `.env` key; for local providers, obtain the endpoint/model and supported concurrency. If access is unavailable or unclear, stop and offer configuration or postponement. Do not fall back to regex/canary for the same semantic objective. A user-approved narrower objective must be labelled separately and satisfy the deterministic selection rule itself.
 4. Estimate dataset size when practical. After generation, report the actual entry count without declaring it large or small. Ask whether it is acceptable unless that count or sizing rule was already approved or sizing decisions were delegated. Do not resize without approval or delegation.
 5. Inspect representative entries offline. Do not submit them manually to the application.
@@ -169,9 +190,9 @@ Read `03-dataset-generation.md`.
 Read `04-testing.md`; read `04b-goat-attack.md` only for GOAT.
 
 1. Reuse a trustworthy matching baseline when one exists. Otherwise run a small static baseline and fix actual execution errors before adding an attack.
-2. Agree `--threads` explicitly; Spikee defaults to 4, but target and local judge/attack-model capacity may require another value. A local server with one processing slot will serialize higher concurrency and may time out.
+2. State that Spikee defaults to 4 threads and ask how many concurrent requests the user wants. Offer 1 as conservative if they are concerned about concurrency, server load, or quotas. Wait for their choice unless it was already supplied or explicitly delegated; do not choose an arbitrary value based on the endpoint being remote/local. Apply Phase 4's concurrency gate and report only evidenced limits.
 3. Calculate the selected entry count and maximum planned target attempts. Include baseline/`--attack-only`, `--attempts`, and `--attack-iterations`; distinguish transport retries and estimated judge/attack-model calls.
-4. Present one short approval block: exact command, dataset/selected entries, mode and attempt ceiling, threads and capacities, provider/cost caveats, tmux name, and attach command. Ask whether the user will run it or wants the agent to run it in that session.
+4. Present one short approval block: exact command, dataset/selected entries, mode and attempt ceiling, user-approved threads, tmux name, and attach command. Mention only relevant evidenced capacity/cost constraints or unresolved limits; do not invent caveats. Ask whether the user will run it or wants the agent to run it in that session.
 5. Establish direct-prompt results before measuring attack uplift, unless a matching baseline already exists. Use `--attack-only` to avoid a redundant baseline. If the direct prompt succeeds, an adaptive attack does not demonstrate a bypass for that entry.
 6. Use only attacks relevant to the question and target. Multi-turn attacks require a proven multi-turn target. Return to Phase 3 for new coverage or transformations.
 
@@ -181,7 +202,7 @@ Read `04-testing.md`; read `04b-goat-attack.md` only for GOAT.
 
 Read `05-results-analysis.md`.
 
-1. Verify the intended result path. Run `spikee results analyze --result-file <path>` first for the standard summary and present its output.
+1. Verify the intended result path. Run `spikee results analyze --result-file <path>` first, capture its output, and present the key figures concisely; show full output only when requested or needed to explain a finding.
 2. Use `spikee results extract` for standard categories. Inspect JSONL directly for specific questions or validation, stating any custom filter or calculation.
 3. Offer HTML output or the loopback-bound web UI when visual exploration helps.
 4. Route runtime/workspace failures to Phase 1, target failures to Phase 2, coverage/judge problems to Phase 3, and sound baselines needing stronger attempts to Phase 4.

@@ -2,9 +2,10 @@
 
 Run attack datasets against your target using `spikee test`.
 
-This is the only default execution path for adversarial testing, including one-off trial prompts. Do not manually invoke adversarial inputs through `spikee debug`, a standalone harness, direct target calls, the application UI, browser/Playwright, Burp Repeater, `curl`, or ad hoc scripts, and do not invent attacks outside the agreed dataset/plugin/attack workflow. If Spikee cannot express the requested test, return to the phase that owns the missing target, seed, plugin, attack, or judge capability and ask the user how to proceed.
-
-Only perform manual or out-of-band testing when the user explicitly requests that deviation. Treat it as a narrow exception: confirm its scope and limits, perform only the agreed attempt, and do not invent extra payloads or iterative follow-ups without further approval. Keep its evidence separate from Spikee results, record a concise sanitized `manual deviation` entry in `spikee.log`, and never merge it into Spikee success rates.
+- Default adversarial execution, including one-off prompts: `spikee test` only. No manual adversarial `spikee debug`, standalone harnesses, direct target calls, application UI, browser/Playwright, Burp Repeater, `curl`, or ad hoc scripts; no attacks outside the agreed dataset/plugin/attack workflow.
+- Missing Spikee capability: return to its owning phase (target/seed/plugin/attack/judge) and ask how to proceed.
+- Manual/out-of-band testing requires an explicit user request. Confirm scope/limits; perform only the agreed attempt. Extra payloads or iterations require further approval.
+- Log a sanitized `manual deviation` in `spikee.log`; keep evidence separate from Spikee results and success rates.
 
 > **Workspace memory:** Read `spikee.log` before selecting a command so completed baselines, known limits, and prior result paths are not rediscovered or rerun blindly.
 
@@ -23,6 +24,8 @@ Before execution, show the fully resolved test command without placeholders or s
 - Only the user's explicit no-session instruction waives tmux for that test. A confirmation waiver, urgency, or a short run does not.
 
 Other Spikee commands run normally without tmux.
+
+During monitoring, follow the [user-facing style rules](SKILL.md#user-facing-brevity-and-evidence): report observed progress, judge verdict counts, and material errors concisely. Label partial results as partial; do not add reactions or commentary about waiting.
 
 ## Required Testing Sequence
 
@@ -50,9 +53,13 @@ Agree whether to use the full dataset or a sample, and state both the fraction a
 
 ## Agree Concurrency Before Testing
 
-Spikee defaults to 4 threads. Agree an explicit `--threads <n>` using the lowest relevant capacity: target rate/session limits, LLM-judge capacity, and LLM-attack-model capacity. Reuse a logged value only when those constraints are unchanged.
-
-Tell the user that a local llama.cpp server with one slot, such as `-np 1`, will serialize higher concurrency and may become slow or time out. Browser-backed or stateful targets normally start at 1 unless worker state is isolated. Recommend a value, let the user choose, and record the decision. On 429s, broken sessions, queues, or timeouts, stop scaling and revisit it.
+- Ask: **“Spikee defaults to 4 threads. How many concurrent requests would you like? Use 1 if you're concerned about concurrency, server load, or quotas.”** Wait before resolving `--threads <n>` or launching. Reuse agreed values when scope/known constraints are unchanged.
+- Never infer capacity or choose arbitrary counts from “remote,” “hosted,” “local,” or “conservative.” Cite only user-supplied limits, relevant docs/configuration, or authorized-run observations for target/judge/attack-provider capacity.
+- Leave unknown capacity unknown; do not invent justifications or probe capacity merely to choose threads. Lower concurrency reduces simultaneous pressure, not total planned requests, and does not guarantee quota compliance.
+- Explicit concurrency delegation: use default 4 within agreed limits unless evidence requires otherwise. State the basis; ask if no value fits the agreed constraints.
+- Inspect shared mutable state/resources for thread safety before claiming restrictions. Browser use, multi-turn behavior, or sharing alone does not imply unsafe concurrency.
+- For evidenced races/session interference, propose a fix or 1 thread pending a fix; obtain agreement. Log the value and approval/delegation.
+- On observed 429s, broken sessions, queues, or timeouts, report evidence and revisit concurrency before scaling.
 
 ## Concise Workload Approval Before Each Test
 
@@ -65,14 +72,15 @@ Derive the workload from the command rather than guessing from the dataset filen
 
 These are conservative target-attempt ceilings. Success can stop attacks early; `--max-retries` can increase transport calls. Estimate judge and attack-model calls separately when possible, otherwise state the uncertainty.
 
-Dynamic `best_of_n` illustrates the distinction. For 1,000 selected entries, `--attempts 1`, and `--attack-iterations 10`, the attack portion can make up to 10,000 target attempts. The planned ceiling is 10,000 with `--attack-only`, or 11,000 when the standard attempt is included. This runtime attack does **not** enlarge the dataset JSONL. By contrast, the generation-time `best_of_n` plugin with `variants=10` creates additional dataset entries, so that larger entry count becomes `D` in the formulas above.
+- Runtime `best_of_n` example: 1,000 entries, `--attempts 1`, `--attack-iterations 10` → at most 10,000 attack attempts; 10,000 total with `--attack-only`, 11,000 including standard attempts. Dataset JSONL size is unchanged.
+- Generation-time `best_of_n` with `variants=10` adds dataset entries; use the enlarged count as `D` above.
 
-Present one compact approval message:
+Present one compact approval message. Group related fields and avoid repeating facts already visible in the command; include only decision-relevant constraints, not generic warnings or lengthy explanations:
 
 - **Dataset:** path; total entries; selected entries after sampling.
 - **Run:** baseline or attack; `--attempts`; attack iterations; `--max-retries`/throttle; whether the standard attempt is included or a named matching baseline is reused.
 - **Workload:** planned maximum target attempts before transport retries; judge/attack-model request estimate or clearly stated uncertainty; material time/cost implication.
-- **Concurrency:** explicit threads, Spikee default of 4 for context, and known target/local-model capacity.
+- **Concurrency:** the user-approved thread count (or explicitly delegated choice with its actual basis); only evidenced capacity constraints.
 - **Command:** the complete exact command with no secret values.
 - **Execution:** proposed tmux session and attach command.
 
@@ -152,7 +160,9 @@ spikee test --dataset datasets/my-dataset.jsonl \
             --threads <agreed-n>
 ```
 
-Preserve the dataset's intended judge semantics. If an LLM judge is required but its provider/model or access is unresolved, stop and ask the user to choose a supported hosted provider/model or a configured local endpoint. Explain the needed `.env` credentials when applicable. **Do not** replace the LLM judge with `regex`/`canary`, edit `judge_name`, or create a custom judge merely to bypass missing LLM access. Present the configuration options and wait for the user's choice. If the user deliberately wants to redesign the evaluation, return to Phase 3, agree the exact judge semantics, update the source seeds, regenerate the dataset, and repeat the baseline.
+- Preserve intended judge semantics. For required but unresolved LLM provider/model/access, present supported hosted or configured local options, explain required `.env` credentials, and wait for the user's choice.
+- Do not bypass missing LLM access with `regex`/`canary`, `judge_name` edits, or a custom judge.
+- User-requested evaluation redesign: return to Phase 3, agree exact semantics, update source seeds, regenerate, and repeat the baseline.
 
 ### Custom Judges
 
@@ -252,7 +262,7 @@ spikee test --dataset datasets/my-dataset.jsonl \
 
 ## 4.5 Runtime Parameters
 
-- `--threads <n>`: Parallel test workers (Spikee default: 4). Always discuss and set this explicitly according to the target, judge, and attack-model capacities.
+- `--threads <n>`: Parallel test workers (Spikee default: 4). Use the user's agreed count under the concurrency gate above; never infer capacity from deployment type.
 - `--attempts <n>`: Retry attempts per entry (default: 1)
 - `--max-retries <n>`: Retries for 429/transient errors (default: 3)
 - `--throttle <seconds>`: Wait time between requests per thread
@@ -329,10 +339,15 @@ class MyAttack(Attack):
 
 The Spikee attack engine calls `target.process_input(...)` in this class. Do not run a custom attack class as a standalone client or use its target calls to conduct manual testing.
 
-Every agent-run `spikee test` has a mandatory audit gate. After the exact command is authorized and immediately before it is dispatched inside the prepared session, write a `starting` record in `spikee.log` with the ISO timestamp, `actor=agent`, working directory, full resolved CLI exactly as it will run, session manager/name, and exact attach command. Include the executable and every argument and option; omit or redact only secret values, which belong in `.env`. If the log write fails, do not launch the test. Every retry or changed command needs a separate record.
-
-After exit, update that same execution record with finish time, exit status, `completed` or `failed`, actual attempts when available, result path, and baseline path if reused. Also update the summary/activity with the total/selected entry counts, planned target-attempt ceiling, agreed thread count and known concurrency limits, target/dataset, judge and attack configuration, outcome, and next gate. Keep Current State's command-confirmation mode and any active autonomy scope accurate. Record a user-approved no-session waiver or manual deviation explicitly and separately. Do not log an unexecuted proposal as `starting` or `completed`, and do not paste console output or result contents into the log.
+- **Hard gate for every agent-run `spikee test`:** after authorization and before dispatch in the prepared session, log `starting` in `spikee.log`: ISO timestamp, `actor=agent`, working directory, exact runnable command, brief purpose summary, session manager/name, exact attach command.
+- Read back and verify under [command logging](SKILL.md#commands-and-test-sessions). Include every argument/value/path and required quoting; omit/redact only secrets, kept in `.env`. Missing/incomplete/mismatched records or logging failure block launch; no condensed commands or summary-only placeholders. Each retry/changed command needs a separate verified record.
+- After exit, update the same record: finish time, exit status, `completed`/`failed`, actual attempts when available, result path, reused baseline path.
+- Update summary/activity: total/selected entries, planned attempt ceiling, agreed threads/known concurrency limits, target/dataset, judge/attack configuration, outcome, next gate.
+- Keep Current State's command-confirmation mode and autonomy scope accurate. Record user-approved no-session waivers and manual deviations explicitly and separately.
+- Do not mark unexecuted proposals `starting`/`completed` or paste console output/result contents into the log.
 
 ## 4.8 Next Step
 
-Once the test completes, report its execution status and exact result path, then propose **Phase 5** analysis under the [phase handoff gate](SKILL.md#collaboration-and-phase-gates). Wait for agreement unless analysis was already explicitly requested or autopilot covers it. Once authorized, read `05-results-analysis.md` and first run `spikee results analyze --result-file <exact-result-path>` without tmux. Present its overview before writing custom analysis scripts. Use scripts or direct JSONL inspection for specific questions, debugging, or analysis the built-in command cannot provide.
+- On completion, report execution status and exact result path; propose **Phase 5** under the [phase handoff gate](SKILL.md#collaboration-and-phase-gates). Wait unless analysis was explicitly requested or autopilot covers it.
+- Once authorized, read `05-results-analysis.md`; first run `spikee results analyze --result-file <exact-result-path>` without tmux and present its overview.
+- Then use scripts/direct JSONL inspection for specific questions, debugging, or analysis unavailable through the built-in command.

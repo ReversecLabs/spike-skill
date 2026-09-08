@@ -6,9 +6,10 @@ A **Target** is a Python adapter between Spikee and a specific LLM-powered featu
 
 ## Target Design Approval Gate — Before Writing Code
 
-Inspect the supplied interface evidence and existing target first. Before creating or modifying a target file, present one compact design proposal: the selected AI feature, single-turn or multi-turn behavior and its rationale, transport, known input/output mapping, and harmless verification plan. Ask the user to resolve missing decisions and approve the design, then **wait for a reply**. Do not create a “temporary” or “starter” target while waiting.
-
-Use already supplied choices without repeating questions. A request to “create a target” authorizes work toward that goal, but does not resolve unspecified turn mode or interface behavior. Reuse approval of a concrete design or explicit delegation of target design; otherwise, obtain agreement before implementation. Setup approval does not satisfy this gate.
+- Inspect supplied interface evidence and the existing target first.
+- Before target edits/creation, propose the AI feature, turn mode/rationale, transport, known input/output mapping, and harmless verification plan. Resolve missing decisions, request design approval, and **wait**. No temporary/starter targets while waiting.
+- Reuse supplied choices without repeat questions. Implement only with concrete design approval or explicit target-design delegation.
+- “Create a target” does not resolve unspecified turn mode/interface behavior. Setup approval does not satisfy this gate.
 
 ## 2.1 Information-Gathering
 
@@ -22,7 +23,9 @@ This phase maps an AI interaction; it is not a general web-application assessmen
 - If the user already named the AI feature, use it. If several candidates are visible and scope is unclear, briefly list them and ask, for example: “I found the chat feature at `/api/chat` and document analysis at `/api/analyse`. Which AI feature is in scope?”
 - If no LLM-powered feature or input path can be identified, stop and ask the user. Do not choose an unrelated endpoint merely to produce a target.
 
-Inspect any URL, API documentation, captured traffic, or existing target the user already provided. When only an application URL is available, make one harmless interaction only with a user-identified or clearly labelled AI feature and inspect the traffic it produces; do not catalogue unrelated requests. If several features are plausible, ask which is in scope before interacting. If the interface remains unclear, ask for a representative request and response captured while using that feature, preferably from Burp Suite or DevTools.
+- Inspect supplied URLs, API docs, captured traffic, and existing targets.
+- With only an application URL, make one harmless interaction with a user-identified or clearly labelled AI feature; inspect its traffic only. If several features are plausible, ask which is in scope first.
+- If the interface remains unclear, request a representative capture from that feature, preferably a Burp Suite/DevTools request and response.
 
 ### Samples Are Never Evidence About the Real Application
 
@@ -51,7 +54,9 @@ The assessment objective does not decide the target type. Harmful-content, promp
 
 A dataset entry is normally one input. Sending it through a multi-turn-capable target does not turn it into a conversation. A multi-turn attack such as `crescendo`, `echo_chamber`, or `multi_turn` creates and manages the additional turns.
 
-If the feature is a genuine chatbot with usable conversation history, ask: **“Should the Spikee target preserve conversation history? I recommend multi-turn because the chatbot supports it; single-turn will treat each prompt independently.”** Include this in the design gate rather than a separate approval round. If the feature has no meaningful conversational state, recommend single-turn and explain the evidence in the proposal. If conversation behavior is unknown, ask for the missing evidence; do not equate unknown state with a stateless feature. Implement only the agreed mode unless target design has been explicitly delegated.
+- Chatbot with usable history: ask whether to preserve it; recommend multi-turn because the feature supports it. Explain that single-turn treats prompts independently.
+- Stateless feature: recommend single-turn with evidence. Unknown conversation behavior: ask for evidence; do not assume statelessness.
+- Include turn mode in the design gate, not a separate approval round. Implement only the agreed mode unless design is explicitly delegated.
 
 Ask only for details that remain unknown:
 
@@ -71,11 +76,16 @@ Ask only for details that remain unknown:
 
 ### Choose the Simplest Reliable Transport
 
-Prefer a direct HTTP/API or WebSocket target when captured traffic can be mapped reliably. If it cannot, use available browser tooling to inspect the application. When the workflow is genuinely available only through rendered UI or browser-managed state, propose Playwright as transport inside a normal custom target. Playwright is not built into Spikee: ask before installing it and its browser dependencies into the workspace venv. Never invent selectors or UI steps; derive them from the live application or user-provided evidence. When this target is later tested through `spikee test` in Phase 4, start with `--threads 1` unless every worker has isolated browser state.
+- Prefer reliably mapped HTTP/API or WebSocket traffic; otherwise inspect with available browser tools.
+- Propose Playwright transport inside a normal custom target only when rendered UI/browser-managed state is required. It is not built into Spikee; ask before installing it and browser dependencies in the workspace venv.
+- Derive selectors/UI steps from the live app or supplied evidence; never invent them.
+- Concurrent execution must be thread-safe. Inspect shared mutable state/resources for races or cross-session interference; sharing alone proves neither.
+- Playwright can run concurrent browser sessions. Report concurrency constraints only with implementation/observed evidence, not from browser use alone; agree threads under Phase 4.
 
 Implement only the requests required to submit content, maintain the selected feature's session when applicable, and extract its AI response. Supporting authentication or session calls may be included because the feature needs them; they are not separate pentest targets.
 
-Use direct requests or browser interaction in this phase only to map the interface and verify the target with benign, non-destructive inputs that do not request sensitive data or external actions. Do not manually send jailbreaks, prompt injections, or other adversarial payloads. Those belong in an agreed dataset or Spikee attack and must be executed through `spikee test` in Phase 4 unless the user explicitly requests a separately logged manual deviation.
+- Direct/browser interactions here are for interface mapping and benign, non-destructive verification only; no requests for sensitive data or external actions.
+- Execute jailbreaks, prompt injections, and other adversarial payloads through agreed datasets/attacks via Phase 4's `spikee test`, unless the user explicitly requests a separately logged manual deviation.
 
 ### Credentials and Secrets
 
@@ -344,7 +354,9 @@ spikee list targets
 spikee debug module targets -m my_target -i "Hello"
 ```
 
-Confirm the response is real, non-empty, and parsed from the expected field. For a multi-turn target, use its standalone harness to send two harmless messages with the same session ID and verify that the second response reflects the first turn. This proves integration only; it is not a manual security test. If connectivity, authentication, parsing, selectors, or session behavior is unresolved, remain in Phase 2 and ask the user for the missing evidence instead of creating a dataset.
+- Confirm a real, non-empty response parsed from the expected field.
+- Multi-turn: use the standalone harness for two harmless messages with the same session ID; verify the second response reflects the first turn. This proves integration, not security.
+- Unresolved connectivity, authentication, parsing, selectors, or session behavior: stay in Phase 2 and request missing evidence; do not create a dataset.
 
 After learning material scope/interface facts, changing the target, or live verification, update the `spikee.log` summary and add one concise target activity entry: sanitized scope, target path, target type/turn mode/transport, safe request/response/session facts learned, `.env` variable names, verification command if run, observed outcome, and next gate. Do not copy captured requests, credentials, or response bodies into the log.
 

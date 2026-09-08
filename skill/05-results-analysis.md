@@ -10,13 +10,16 @@ Any new or repeated `spikee test` proposed during analysis is Phase 4 work and m
 
 ## Built-In Analysis First; JSONL When Useful
 
-For a normal summary of a completed run, do not begin by rebuilding Spikee's aggregate calculations manually. First run `spikee results analyze` normally, without tmux, against the exact intended result file and present the resulting overview and relevant breakdowns to the user. Do not merely say that analysis completed: capture its console output, explain the important figures, and retain the exact result path.
+- For a completed-run summary, first run `spikee results analyze` without tmux on the exact intended result file; do not rebuild aggregates first.
+- Capture console output; report key figures, material errors/limitations, and exact path briefly. “Analysis completed” alone is insufficient. Show full output/breakdowns only when requested or needed to explain a finding.
 
 The CLI subcommand is `analyze` (American spelling): `spikee results analyze`. There is no `spikee results --analyse` form in this bundled version.
 
-Direct inspection of the result JSONL is also allowed and often necessary. Use ordinary read-only tools such as `jq`, `rg`, or a small parsing script for specific questions, individual prompt/response review, error diagnosis, severity assessment, validation of judge decisions, or calculations not provided by Spikee. Prefer `spikee results extract` when its standard categories already express the requested filter. State which files and filters a manual answer used, distinguish custom calculations from Spikee's metrics, and never edit the original result artifact in place.
-
-Preserve result artifacts by default. If the user explicitly asks to edit, replace, move, archive, or delete a result—including stale results—treat it as an audited mutation. After any required authorization and immediately before the change, add a `starting` record under `Executions` in `spikee.log` with the timestamp, actor, operation, exact source/destination paths, reason, and full command or action. If the log write fails, do not mutate the result. Afterward, update the same record with finish time and `completed` or `failed`; state whether the original remains recoverable. Never infer permission to clean up results.
+- Allow read-only JSONL inspection (`jq`, `rg`, parsing scripts) for specific questions, prompt/response review, error diagnosis, severity, judge validation, or calculations unavailable in Spikee. Prefer `spikee results extract` for supported category filters.
+- State files/filters used; distinguish custom calculations from Spikee metrics. Never edit the original artifact in place during inspection.
+- Preserve results, including stale ones. Editing, replacing, moving, archiving, or deleting requires an explicit user request; never infer cleanup permission.
+- After required authorization, immediately before mutation, log `starting` under `Executions` in `spikee.log`: timestamp, actor, operation, exact source/destination paths, reason, full command/action. Logging failure blocks mutation.
+- After mutation, update the same record with finish time and `completed`/`failed`; state whether the original is recoverable.
 
 If `spikee results analyze` fails or cannot parse an artifact, report that failure and investigate the JSONL directly instead of abandoning the analysis. Keep the fallback clearly labelled; do not present manually reconstructed numbers as command output.
 
@@ -130,7 +133,8 @@ Use the smallest reliable query and report its basis—for example, the exact re
 
 Re-evaluate existing results with a different judge or LLM model without re-running the test:
 
-Do not re-judge automatically. Run this only after the user explicitly chooses re-judging and the judge provider/model. State why it is proposed and label the resulting analysis with the chosen evaluation configuration. If LLM access is missing or unclear, stop and offer supported hosted-provider or local-endpoint setup options; do not substitute `regex`, `canary`, or a custom judge, and do not rewrite the dataset to make re-judging run.
+- Re-judge only after explicit user choice of re-judging and provider/model. Explain the proposal; label analysis with the chosen evaluation configuration.
+- Missing/unclear LLM access: stop and offer supported hosted-provider/local-endpoint setup. No `regex`/`canary`/custom-judge substitution or dataset rewriting to bypass the blocker.
 
 ```bash
 # Re-judge with a different LLM
@@ -237,6 +241,7 @@ Based on results, recommend next steps using the table below. These are proposal
 | Many timeouts, rate-limit responses, or request errors | Identify whether they came from the target, judge/attack provider, or test runner; route to Phase 2 or 4 accordingly before drawing conclusions |
 | Many guardrail triggers | Run the false-positive workflow and verify benign coverage before concluding that the guardrail is effective |
 
-After analysis, update the `spikee.log` summary and add a concise analysis/decision entry containing the built-in analysis command and result/report path, only durable conclusions, any material errors or coverage gaps, the user's decision, and the next phase/gate. If a manual JSONL query materially informed the conclusion, record its purpose and sanitized filter briefly rather than its raw output. Do not duplicate detailed evidence already stored in results.
+- After analysis, update `spikee.log` summary and analysis/decision activity: built-in command, result/report path, durable conclusions, material errors/coverage gaps, user decision, next phase/gate.
+- For material manual JSONL queries, log purpose and sanitized filter, not raw output. Do not duplicate evidence stored in results.
 
 > For complete results documentation, read `spikee-src/docs/11_results.md`.
