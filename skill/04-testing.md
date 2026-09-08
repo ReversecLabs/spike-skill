@@ -15,8 +15,8 @@ This guide, `spikee list attacks -d`, and examples in the initialized workspace 
 Before execution, show the fully resolved test command without placeholders or secrets and propose a unique session such as `spikee-baseline-20260904-143000`. Ask: **“Would you like to run this command yourself, or should I run it in tmux session `<name>`?”**
 
 - If the user will run it, wait for their result.
-- For agent execution, create an empty session in the workspace with `remain-on-exit`, show the resolved `tmux attach-session -t <name>` in its own fenced `bash` code block, then start the confirmed command inside it. Do not start before sending the attach command.
-- Monitor with `tmux capture-pane` and leave the session available after exit.
+- For agent execution, create an empty session in the workspace and set `tmux set-window-option -t <name> remain-on-exit on` before launch. Show the resolved `tmux attach-session -t <name>` in its own fenced `bash` code block, then start the confirmed command inside it. Do not start before sending the attach command.
+- Monitor with `tmux capture-pane`. Whether the test succeeds or fails, leave the session and final pane output available for inspection. Never attach automatic `kill-session`, `kill-window`, or `kill-pane` cleanup to the command. Remove the session only after the user explicitly asks or confirms inspection is finished.
 - If tmux is unavailable, stop and offer installation or an attachable equivalent. Never substitute foreground execution, `&`, or `nohup`.
 - Only the user's explicit no-session instruction waives tmux for that test. A confirmation waiver, urgency, or a short run does not.
 
