@@ -16,6 +16,8 @@ Use Spikee to generate datasets, test an LLM application, and analyse the result
 
 **A passed technical gate means ready to discuss the next phase, not permission to start it.**
 
+**Before the first change:** Unless explicit autopilot covers it, inspect the existing workspace without modifying it, then stop for a user decision. Do not create directories or a venv, install packages, initialize Spikee, edit configuration, or create/modify a target merely because these seem necessary to “test this app.” Present the proposed setup commands or target design and wait. Permission to inspect, a supplied URL, and tool access are not approval to implement. Reuse an explicit approval of those concrete actions; do not ask again.
+
 1. **Orient:** Read `spikee.log`, inspect relevant existing artifacts, and identify the current phase, completed prerequisites, and unresolved decisions. Do this focused inspection before asking the user what is already discoverable.
 2. **Agree the work:** Briefly explain the current state and propose the concrete action for this phase. Ask only decision-relevant questions and wait for the user's answer before starting work they have not already authorized. A specific request to perform that action is sufficient; do not reconfirm it.
 3. **Execute within scope:** Complete the agreed phase work and its required checks. Do not silently add later phases, broader coverage, stronger attacks, or another test run.
@@ -54,7 +56,7 @@ Adversarial prompts and attacks normally flow through an agreed Spikee dataset, 
 
 ## Commands and Test Sessions
 
-Before any Spikee CLI command, resolve and show the exact command without secret values. By default, ask whether the user wants to run it or wants the agent to run it. A user's response to a displayed command or batch, such as “you run the commands,” authorizes that exact preview; do not ask again. Preview and confirm changed commands, added commands, and retries separately.
+Before any Spikee CLI command or command that creates/modifies the runtime or workspace (`mkdir`, venv creation, package installation, configuration writes), resolve and show the exact command without secret values. By default, ask whether the user wants to run it or wants the agent to run it, then wait for the answer before dispatch. Do not bypass this gate by using Python, a script, or a file-editing tool instead of a shell command. Read-only local inspection may proceed to inform the proposal. A user's response to a displayed command or batch, such as “you run the commands,” authorizes that exact preview; do not ask again. Preview and confirm changed commands, added commands, and retries separately. Routine `spikee.log` updates required for already authorized work remain part of that work.
 
 An explicit instruction to stop asking for command confirmations waives the question for its stated scope, or the current task when no scope is given. Continue to print every exact command before execution. Record the waiver and scope in `spikee.log`.
 
@@ -125,7 +127,7 @@ For a narrow request, enter the relevant phase and verify only its prerequisites
 Read `01-workspace-setup.md`.
 
 1. Locate the intended project directory and any existing `spikee.log`.
-2. Check for a local `.venv`, `venv`, or `env` before invoking Spikee. If absent, recommend creating `.venv` and installing Spikee there. If present, check/install Spikee through that venv and compare its version with the bundled metadata.
+2. Check for a local `.venv`, `venv`, or `env` before invoking Spikee. Inspect existing runtime metadata and compare its version with the bundled metadata. If creation, installation, or an update is needed, present the exact setup commands and wait for approval under the setup gate before running them.
 3. Never use or modify a system-wide Spikee installation unless the user explicitly chooses it after hearing that the project-local venv is preferred.
 4. After the local runtime is ready, detect or initialize the workspace with that venv's Spikee.
 5. Configure only providers needed for the agreed work. Do not enumerate every seed, target, plugin, attack, judge, or provider during setup; list the relevant category when a later decision needs it.
@@ -142,7 +144,7 @@ Read `02-custom-targets.md`; read `02b-advanced-targets.md` only for advanced au
 4. Never search for, fetch, or clone an application or sample application's source repository based on such a similarity. Never probe endpoints copied or guessed from a sample. If external source lookup seems necessary and the user did not supply or authorize it, stop before the lookup and ask with the exact URL and reason.
 5. Reuse a target only when the user or evidence from the real application confirms it is correct. Otherwise ask only for missing facts needed to map the selected feature: URL, captured Burp/DevTools request and response, authentication, input/output fields, errors, and session behavior.
 6. Choose target turn mode from the real feature's conversation capability, not from the security objective. Single-turn means independent calls; multi-turn means the target can preserve conversation state. Harmful-content and authorization tests may use either mode.
-7. For a genuine chatbot with usable history, ask whether Spikee should preserve it and normally recommend a multi-turn target. Give no invented rationale. A static dataset entry remains one prompt even through a multi-turn-capable target; only a multi-turn attack such as `crescendo` creates a multi-message test.
+7. Before creating or modifying a target, present the proposed turn mode, transport, input/output mapping, and verification plan; wait for design approval unless already supplied or explicitly delegated. For a genuine chatbot with usable history, ask whether Spikee should preserve it and normally recommend multi-turn. For a stateless feature, explain why single-turn fits and include that choice in the design approval. Unknown session behavior requires a question, not a silent single-turn default. A static dataset entry remains one prompt even through a multi-turn-capable target; only a multi-turn attack such as `crescendo` creates a multi-message test.
 8. Prefer a mapped HTTP or WebSocket target. Use browser inspection only when mapping is unclear; propose a Playwright-backed target only when browser state is truly required.
 9. Keep credentials in `.env`, never in code or CLI options. Preserve existing `.env` entries when adding or changing a variable.
 10. Start from workspace `targets/` examples for Spikee structure only. Use docs, then source, only under the reference order below.
