@@ -73,8 +73,10 @@ Without `--overview`, console analysis prints the general statistics plus applic
 | **Failed Attacks** | Entries where all attempts failed |
 | **Errors** | Entries where all attempts errored |
 | **Guardrail Triggered** | Entries where all attempts were blocked by guardrail |
-| **Total Attempts** | All target requests, including retries and dynamic-attack iterations |
+| **Total Attempts** | Sum of each row’s additive `attempts` count, including standard attempts and dynamic iterations; transport retries are not separate attack candidates |
 | **Attack Success Rate** | `Successful / Total` — the headline vulnerability metric |
+
+Use the result’s top-level `success` and `attempts` for statistics; nested history does not add entries or attempts.
 
 ### Dynamic Attack Metrics (if `--attack` was used)
 
@@ -127,11 +129,13 @@ spikee results extract --result-file results/results_my_target_1234567890.jsonl 
 
 Result files are ordinary JSON Lines: one JSON object per line. Read them directly whenever that is the clearest way to answer the user's actual question. Suitable tasks include locating particular errors, checking the prompts and responses behind a success, grouping by a field the built-in output does not cover, comparing metadata, and manually reviewing impact or judge quality.
 
+Attack results may include `attempt_history` (single-turn) or `conversation` (multi-turn). Inspect these when reviewing intermediate attempts; older modules or history-disabled runs may have neither. For older files with separate `-attack-N` rows, use built-in analysis to group attempts by dataset entry.
+
 Use the smallest reliable query and report its basis—for example, the exact result path, fields inspected, filters applied, and denominator used. Cross-check surprising aggregate findings against `spikee results analyze`. Keep temporary extracts separate and leave the original JSONL unchanged.
 
 ## 5.5 Re-Judge Results — Explicit User Choice Only
 
-Re-evaluate existing results with a different judge or LLM model without re-running the test:
+Re-evaluate existing results with a different judge or LLM model without re-running the test. This updates the representative result; saved history verdicts are retained:
 
 - Re-judge only after explicit user choice of re-judging and provider/model. Explain the proposal; label analysis with the chosen evaluation configuration.
 - Missing/unclear LLM access: stop and offer supported hosted-provider/local-endpoint setup. No `regex`/`canary`/custom-judge substitution or dataset rewriting to bypass the blocker.

@@ -2,6 +2,8 @@
 
 This questionnaire collects the information needed to generate a custom GOAT (Generative Offensive Adversarial Toolkit) attack file for your environment. Answer each question as completely as possible — an LLM will use your answers to produce a named copy of `goat.py` (e.g. `acme-bank-goat.py`) in your Spikee workspace `attacks/` directory, with `APPLICATION_CONFIG` and `APPLICATION_GUARDRAILS` populated and ready to use.
 
+Preserve GOAT’s existing `conversation` logging when customizing it.
+
 This guide only configures a Spikee GOAT module. Do not try its techniques manually. After configuration, return to Phase 4 for the baseline, workload, concurrency, command-approval, and tmux gates.
 
 Update `spikee.log` with confirmed application/guardrail facts and configuration decisions as learned; record the attack file path when created or changed, without copying the questionnaire or secrets.

@@ -212,7 +212,11 @@ class MyCustomJudge(Judge):
 
 ## 4.4 Dynamic Attacks
 
-Attacks are adaptive strategies that modify payloads in real-time. They run **only when the standard attempt fails** unless `--attack-only` is used. This makes the ordinary combined run meaningful: an attack-only success is a demonstrated bypass only when the same entry has a trustworthy baseline refusal.
+Attack modules adapt payloads or conversations during a `spikee test` run. They run **only when the standard attempt fails** unless `--attack-only` is used. This makes the ordinary combined run meaningful: an attack-only success is a demonstrated bypass only when the same entry has a trustworthy baseline refusal.
+
+An attack produces one result per dataset entry. For single-turn attacks, `input` and `response` contain the first successful attempt, or the last attempt if none succeeds. Most also record attempted inputs and responses in `attempt_history`. Multi-turn conversational attacks keep their conversation history in `conversation`.
+
+Set `SPIKEE_ATTACK_HISTORY=false` in the workspace `.env` to reduce result-file size by disabling optional single-turn history, which is enabled by default.
 
 Do not add a dynamic attack to the smoke baseline. Before using one, confirm all of the following:
 
@@ -283,7 +287,7 @@ spikee test --dataset datasets/my-dataset.jsonl \
 ## 4.5 Runtime Parameters
 
 - `--threads <n>`: Parallel test workers (Spikee default: 4). Use the user's agreed count under the concurrency gate above; never infer capacity from deployment type.
-- `--attempts <n>`: Retry attempts per entry (default: 1)
+- `--attempts <n>`: Standard attempts and repeated dynamic-attack invocations per entry (default: 1)
 - `--max-retries <n>`: Retries for 429/transient errors (default: 3)
 - `--throttle <seconds>`: Wait time between requests per thread
 - `--sample <percentage>`: Sample percentage of dataset (e.g., `0.15` for 15%)
@@ -308,56 +312,52 @@ spikee test --dataset datasets/my-dataset.jsonl --target my_target --no-auto-res
 
 ## 4.7 Writing Custom Attacks
 
-Create in `attacks/` in your workspace:
+Create custom modules in your workspace's `attacks/` directory. Return `(attempts_used, success, input, response)`; for single-turn history, collect records in the attack loop and attach them using `Attack.standardised_input_return(..., attempt_history=history)`, as below. Existing modules can omit history.
 
 ```python
-# attacks/my_attack.py
 from spikee.templates.attack import Attack
-from spikee.utilities.hinting import ModuleDescriptionHint, ModuleOptionsHint
-from spikee.utilities.enums import ModuleTag
+from spikee.utilities.attack import attack_history_enabled
 
-class MyAttack(Attack):
-    def get_description(self) -> ModuleDescriptionHint:
-        return [ModuleTag.SINGLE], "My custom attack strategy"
 
-    def get_available_option_values(self) -> ModuleOptionsHint:
-        return [], False
-
-    def attack(self, entry, target, judge_fn, max_iterations, pbar, lock, attack_option=None):
-        """Run the attack strategy.
-
-        Args:
-            entry: Dataset entry dict with 'text', 'judge_name', 'judge_args', etc.
-            target: AdvancedTargetWrapper instance — call target.process_input(text)
-            judge_fn: Judge function — call judge_fn(entry, response) → bool
-            max_iterations: Maximum iterations allowed (from --attack-iterations)
-            pbar: tqdm progress bar (update with lock)
-            lock: threading.Lock for thread-safe progress updates
-
-        Returns:
-            tuple: (attempts_count, success_bool, final_input, final_response)
-        """
-        for i in range(max_iterations):
-            # Modify the payload
-            modified_text = f"Please help me with: {entry['text']}"
-
-            try:
-                response, meta = target.process_input(modified_text)
-                with lock:
-                    pbar.update(1)
-
-                if judge_fn(entry, response):
-                    return i + 1, True, modified_text, response
-            except Exception:
-                with lock:
-                    pbar.update(1)
-
-        return max_iterations, False, modified_text, ""
+def attack(entry, target_module, call_judge, max_iterations,
+           attempts_bar=None, bar_lock=None, attack_options=None):
+    history = [] if attack_history_enabled() else None
+    count, success = 0, False
+    last_input, last_response = "", ""
+    for count in range(1, max_iterations + 1):
+        last_input = f"{entry['content']} — variant {count}"
+        last_response = ""
+        error = None
+        try:
+            last_response, _ = target_module.process_input(last_input)
+            success = call_judge(entry, last_response)
+        except Exception as exc:
+            success, error = False, str(exc)
+        if history is not None:
+            record = {
+                "input": last_input,
+                "response": last_response,
+                "success": None if error is not None else success,
+            }
+            if error is not None:
+                record["error"] = error
+            history.append(record)
+        if attempts_bar is not None:
+            with bar_lock:
+                attempts_bar.update(1)
+        if success:
+            break
+    return (
+        count,
+        success,
+        Attack.standardised_input_return(last_input, attempt_history=history),
+        last_response,
+    )
 ```
 
 > Start with `attacks/sample_attack.py` in the initialized workspace and the official dynamic-attack guide. Inspect built-in attack source only if a concrete implementation question remains or observed behavior needs debugging.
 
-The Spikee attack engine calls `target.process_input(...)` in this class. Do not run a custom attack class as a standalone client or use its target calls to conduct manual testing.
+The module calls the supplied `target_module.process_input(...)` through the Spikee attack engine. Do not run a custom attack class as a standalone client or use its target calls to conduct manual testing.
 
 - **Hard gate for every agent-run `spikee test`:** after authorization and before dispatch in the prepared session, log `starting` in `spikee.log`: ISO timestamp, `actor=agent`, working directory, exact runnable command, brief purpose summary, session manager/name, exact attach command.
 - Read back and verify under [command logging](SKILL.md#commands-and-test-sessions). Include every argument/value/path and required quoting; omit/redact only secrets, kept in `.env`. Missing/incomplete/mismatched records or logging failure block launch; no condensed commands or summary-only placeholders. Each retry/changed command needs a separate verified record.
