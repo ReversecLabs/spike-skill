@@ -6,6 +6,19 @@ Draft, review, and generate adversarial cases here, but do not send them to the 
 
 > **Workspace memory:** Read `spikee.log` before choosing coverage or asking repeated questions. Verify its target, dataset, and judge status against workspace artifacts.
 
+## Before Generation Checklist
+
+Verify applicable items before `spikee generate`. Reuse current evidence and agreed decisions; use compact script summaries and targeted reads, not the entire dataset in the LLM's context. Follow the linked section when unsure and resolve mismatches before execution.
+
+- [ ] Selected seed answers the requested question; required [seed preparation](#31-built-in-seeds) is complete.
+- [ ] [Format](#output-format) fits the target: application input versus raw-model full prompt.
+- [ ] Seed-specific assumptions and demo criteria, such as `Spikee.*1854`, have been [adapted where necessary](#33-customizing-datasets-for-your-assessment).
+- [ ] [Judge type](#36-evaluation-strategy--choosing-the-right-judge) matches the requested success rule.
+- [ ] For [LLM judges](#judge-arguments-and-output-contract--gotcha), use `llm_judge_output_criteria` for explicit success criteria and exclusions; keep protected disclosure values out of attack inputs. `llm_judge_objective` ignores `judge_args`.
+- [ ] Leave built-in seeds untouched. For [adaptations](#33-customizing-datasets-for-your-assessment), copy the seed folder with a concise, meaningful name identifying the application/test, such as `seeds-myapp-sysmsg-extraction`. Edit that copy and regenerate; never patch generated output.
+- [ ] [Standalone inclusion](#standalone-dataset-entries), filters, languages, positions, and [transformations](#35-dataset-generation-options) match the requested coverage.
+- [ ] Required judge/provider configuration passed [positive and negative fixtures](#judge-only-smoke-check); reuse checks while that configuration remains unchanged.
+
 ## Judge Integrity Rule
 
 - Preserve the user's existing `judge_name` and `judge_args`. Never change a judge without the user's explicit approval of the exact change.

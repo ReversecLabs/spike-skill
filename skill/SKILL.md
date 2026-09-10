@@ -175,7 +175,7 @@ Read `02-custom-targets.md`; read `02b-advanced-targets.md` only for advanced au
 
 ### Phase 3 — Dataset and Judge
 
-Read `03-dataset-generation.md`.
+Read `03-dataset-generation.md`; complete its [before-generation checklist](03-dataset-generation.md#before-generation-checklist) before generating.
 
 1. Before customizing seeds or generating datasets, clarify any unresolved goals and present a coverage plan: the question each dataset answers, suitable built-in seeds, and gaps requiring customization. Get the user's agreement unless they have explicitly delegated dataset decisions for this step or the whole task; then choose within that scope and state the plan. Follow Phase 3's design gate.
 2. Use `canary` (exact string/keyword) or `regex` (precise pattern) only when matching fully determines agreed success. Check the complete input and plausible failure/success responses offline; echoes or refusals must not masquerade as success. Keep disclosure markers out of attack inputs. Require an LLM judge for semantic/contextual/ambiguous criteria or unavoidable misclassification; no keyword heuristics. Preserve existing judge names/arguments unless the user explicitly approves changes.
@@ -187,7 +187,7 @@ Read `03-dataset-generation.md`.
 
 ### Phase 4 — Test and Attack
 
-Read `04-testing.md`; read `04b-goat-attack.md` only for GOAT.
+Read `04-testing.md`; complete its [before-testing](04-testing.md#before-testing-checklist) and [after-dispatch](04-testing.md#immediately-after-dispatch-checklist) checks at the relevant points. Read `04b-goat-attack.md` only for GOAT.
 
 1. Reuse a trustworthy matching baseline when one exists. Otherwise run a small static baseline and fix actual execution errors before adding an attack.
 2. State that Spikee defaults to 4 threads and ask how many concurrent requests the user wants. Offer 1 as conservative if they are concerned about concurrency, server load, or quotas. Wait for their choice unless it was already supplied or explicitly delegated; do not choose an arbitrary value based on the endpoint being remote/local. Apply Phase 4's concurrency gate and report only evidenced limits.

@@ -11,6 +11,26 @@ Run attack datasets against your target using `spikee test`.
 
 This guide, `spikee list attacks -d`, and examples in the initialized workspace are sufficient for routine test and attack setup. Consult `spikee-src/docs/08_dynamic_attacks.md` when a documented option is unclear. Do not read attack implementation source merely to start a built-in attack; inspect it only for unresolved behavior or debugging.
 
+## Before Testing Checklist
+
+Verify applicable items before every `spikee test`, including retries. Reuse current evidence and agreed decisions; use compact script summaries and targeted reads, not the entire dataset in the LLM's context. Follow the linked section when unsure and resolve mismatches before execution.
+
+- [ ] Correct workspace, [local runtime](01-workspace-setup.md#11-establish-the-project-local-venv-first), target, and target options selected; relevant [target verification](02-custom-targets.md#28-prove-the-target-works) remains valid.
+- [ ] Exact [dataset paths](#41-basic-test-command) resolved; globs do not unintentionally include older datasets.
+- [ ] Compact judge/criteria counts match the intended configuration. [`--judge-options`](#43-judges--how-success-is-determined) configures the backend—it does not select the judge.
+- [ ] A few representative inputs confirm the intended [composition](03-dataset-generation.md#32-how-composable-datasets-work) and [transformations](03-dataset-generation.md#35-dataset-generation-options); count/category summaries show expected coverage.
+- [ ] [Target](#41-basic-test-command), [judge](#43-judges--how-success-is-determined), and [attack-model](#44-dynamic-attacks) settings use their respective options; required modules and credentials are available.
+- [ ] [Baseline or attack mode](#required-testing-sequence) matches the task; multi-turn attacks have a verified compatible target.
+- [ ] [`--attack-only`](#attack-only-mode) has a trustworthy matching baseline recorded.
+- [ ] Selected count, sampling, attempts, attack iterations, retries, and concurrency match the [agreed workload](#concise-workload-approval-before-each-test).
+- [ ] Check for existing matching results, including previous failed runs. Without explicit resume/fresh flags, Spikee can pause inside tmux asking which to use. Apply the agreed choice using [`--resume-file`, `--auto-resume`, or `--no-auto-resume`](#46-resume-and-re-run).
+- [ ] Exact command is [logged and verified](SKILL.md#commands-and-test-sessions); named tmux session and [attach instructions](#mandatory-preview-and-attachable-session-for-spikee-test) are ready.
+
+## Immediately After Dispatch Checklist
+
+- [ ] [Inspect the pane](#mandatory-preview-and-attachable-session-for-spikee-test): it shows testing progress, not a resume prompt or startup error.
+- [ ] [Early result metadata](05-results-analysis.md#54-direct-jsonl-inspection) confirms the intended judge/configuration before reporting the run as working.
+
 ## Mandatory Preview and Attachable Session for `spikee test`
 
 Apply the [collaboration and delegation rules](SKILL.md#collaboration-and-phase-gates) to approval questions below. Reuse explicit authorization or scoped autopilot instead of asking again; always preview the command and workload, and stop for unresolved limits outside the delegation. Passing a baseline does not itself authorize scaling or adding attacks.
