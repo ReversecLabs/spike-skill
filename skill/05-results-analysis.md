@@ -139,6 +139,7 @@ Re-evaluate existing results with a different judge or LLM model without re-runn
 
 - Re-judge only after explicit user choice of re-judging and provider/model. Explain the proposal; label analysis with the chosen evaluation configuration.
 - Missing/unclear LLM access: stop and offer supported hosted-provider/local-endpoint setup. No `regex`/`canary`/custom-judge substitution or dataset rewriting to bypass the blocker.
+- Check which input the installed rejudge path uses; a saved `objective` field does not prove it is consumed. Preserve original results. See [judge diagnosis](03b-judges.md#wrong-verdict-check-these-first).
 
 ```bash
 # Re-judge with a different LLM

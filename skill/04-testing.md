@@ -169,7 +169,7 @@ Every dataset entry has a `judge_name` field that determines how Spikee evaluate
 
 ### Built-In Basic Judges (No LLM required)
 
-- `canary`: Checks if `judge_args` string appears in the response (case-insensitive).
+- `canary`: Checks if `judge_args` string appears in the response (case-sensitive).
 - `regex`: Checks if `judge_args` regex pattern matches the response.
 
 *Note: These judges run locally and do **not** require `--judge-options`.*
@@ -178,8 +178,9 @@ Every dataset entry has a `judge_name` field that determines how Spikee evaluate
 
 - `llm_judge_harmful`: Evaluates for harmful content.
 - `llm_judge_objective`: Checks whether the response fulfills or materially advances the input instruction's objective; suited to instruction-only datasets. The bundled implementation ignores `judge_args`; use Phase 3's guidance for separate custom criteria.
-- `llm_judge_output_criteria`: Evaluates custom criteria from `judge_args`.
-- `llm_judge_output_only`: Like output_criteria but only sees the response (not the prompt).
+- `llm_judge_output_criteria`: Evaluates the response against custom criteria from `judge_args`; it does not receive the input prompt.
+
+See [judge arguments and verdict examples](03b-judges.md).
 
 *Note: These judges require an LLM to perform semantic evaluation. You **must** provide the `--judge-options` flag.*
 
@@ -204,21 +205,22 @@ Create in `judges/` in your workspace:
 # judges/my_custom_judge.py
 from spikee.templates.judge import Judge
 from spikee.utilities.hinting import ModuleDescriptionHint, ModuleOptionsHint
-from spikee.utilities.enums import ModuleTag
 
 class MyCustomJudge(Judge):
     def get_description(self) -> ModuleDescriptionHint:
-        return [ModuleTag.SINGLE], "My custom judge"
+        return [], "Checks a configured marker (minimal custom-judge API example)"
 
     def get_available_option_values(self) -> ModuleOptionsHint:
         return [], False
 
-    def judge(self, prompt, response, judge_args, judge_options=None) -> bool:
+    def judge(self, llm_input: str, llm_output: str, judge_args, judge_options=None) -> bool:
         """Return True if the attack succeeded, False otherwise."""
-        return "SECRET_DATA" in str(response)
+        return isinstance(judge_args, str) and bool(judge_args) and judge_args in llm_output
 ```
 
 > Start with the initialized workspace's `judges/` examples and `spikee-src/docs/09_judges.md`. Inspect judge base-class source only for an unresolved custom-judge contract or debugging issue.
+
+The example demonstrates the required annotated `llm_input`/`llm_output` contract; use the existing `canary` judge for ordinary marker matching.
 
 ## 4.4 Dynamic Attacks
 

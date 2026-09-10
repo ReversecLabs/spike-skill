@@ -68,6 +68,7 @@ skill/
 ├── 01-workspace-setup.md       # Install, init workspace, configure providers
 ├── 02-custom-targets.md        # Write targets for the application under test
 ├── 03-dataset-generation.md    # Seeds, plugins, dataset formats
+├── 03b-judges.md               # Judge choice, arguments, version pitfalls, validation
 ├── 04-testing.md               # Run tests, attacks, judges, runtime options
 ├── 05-results-analysis.md      # Analyse, extract, re-judge, iterate
 └── spikee-src/                 # Spikee source code + docs (git submodule)
