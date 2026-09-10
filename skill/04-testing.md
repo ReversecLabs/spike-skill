@@ -18,7 +18,7 @@ Verify applicable items before every `spikee test`, including retries. Reuse cur
 - [ ] Correct workspace, [local runtime](01-workspace-setup.md#11-establish-the-project-local-venv-first), target, and target options selected; relevant [target verification](02-custom-targets.md#28-prove-the-target-works) remains valid.
 - [ ] Exact [dataset paths](#41-basic-test-command) resolved; globs do not unintentionally include older datasets.
 - [ ] Compact judge/criteria counts match the intended configuration. [`--judge-options`](#43-judges--how-success-is-determined) configures the backend—it does not select the judge.
-- [ ] A few representative inputs confirm the intended [composition](03-dataset-generation.md#32-how-composable-datasets-work) and [transformations](03-dataset-generation.md#35-dataset-generation-options); count/category summaries show expected coverage.
+- [ ] A few representative inputs confirm [application-appropriate base inputs](03-dataset-generation.md#match-base-inputs-to-the-application), intended [composition](03-dataset-generation.md#32-how-composable-datasets-work), and [transformations](03-dataset-generation.md#35-dataset-generation-options); count/category summaries show expected coverage.
 - [ ] [Target](#41-basic-test-command), [judge](#43-judges--how-success-is-determined), and [attack-model](#44-dynamic-attacks) settings use their respective options; required modules and credentials are available.
 - [ ] [Baseline or attack mode](#required-testing-sequence) matches the task; multi-turn attacks have a verified compatible target.
 - [ ] [`--attack-only`](#attack-only-mode) has a trustworthy matching baseline recorded.

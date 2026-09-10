@@ -12,6 +12,7 @@ Verify applicable items before `spikee generate`. Reuse current evidence and agr
 
 - [ ] Selected seed answers the requested question; required [seed preparation](#31-built-in-seeds) is complete.
 - [ ] [Format](#output-format) fits the target: application input versus raw-model full prompt.
+- [ ] For composable seeds, [`base_user_inputs.jsonl`](#match-base-inputs-to-the-application) fits the application's real use case. Copy and adapt seeds containing unrelated template inputs; use a placeholder-only direct input and/or relevant chatbot prompts or documents.
 - [ ] Seed-specific assumptions and demo criteria, such as `Spikee.*1854`, have been [adapted where necessary](#33-customizing-datasets-for-your-assessment).
 - [ ] [Judge type](#36-evaluation-strategy--choosing-the-right-judge) matches the requested success rule.
 - [ ] For [LLM judges](#judge-arguments-and-output-contract--gotcha), use `llm_judge_output_criteria` for explicit success criteria and exclusions; keep protected disclosure values out of attack inputs. `llm_judge_objective` ignores `judge_args`.
@@ -158,14 +159,20 @@ spikee generate --seed-folder datasets/seeds-simsonsun-high-quality-jailbreaks \
 
 - Match datasets to the assessment/test objective. Inspect existing datasets/seeds; agree target behavior, objective, attack categories, and success evidence.
 - For access-control tests, use section 3.6's known-data strategy to distinguish unauthorized access/actions from legitimate results.
-- Reuse fitting datasets; customize seeds only for coverage changes.
+- Reuse fitting datasets; customize seeds when their base inputs, instructions, or judges do not fit the application and agreed test.
 
 When customization is needed, start by copying the closest existing seed folder:
 ```bash
 cp -r datasets/seeds-cybersec-2026-01 datasets/seeds-my-assessment
 ```
 
-Then modify the seed files to match the engagement. The key questions to ask the user:
+Then modify the seed files to match the engagement.
+
+### Match Base Inputs to the Application
+
+Before using any built-in composable seed, including system-message extraction, inspect its `base_user_inputs.jsonl`. A matching attack objective does not make the template's base inputs suitable for the application. If they do not fit, copy the seed folder under a meaningful application/test name, replace or remove unrelated base inputs in the copy, and generate from that copy. Leave the built-in seed untouched.
+
+The `document` field can contain a chat prompt; its name does not require an actual document. Use a placeholder-only direct input (`"document": "<PLACEHOLDER>"`) and/or realistic inputs for the selected feature: expected user questions for a chatbot, relevant documents for a document processor, or retrieved context for an indirect RAG test. Do not retain a template email when email processing is outside the use case. Adapt the examples below using known application behavior; ask only for missing context needed to choose suitable inputs.
 
 ### What kind of application is the target?
 
