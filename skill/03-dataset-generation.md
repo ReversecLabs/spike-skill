@@ -18,6 +18,7 @@ Verify applicable items before `spikee generate`. Reuse current evidence and agr
 - [ ] For [LLM judges](#judge-arguments-and-output-contract--gotcha), use `llm_judge_output_criteria` for explicit success criteria and exclusions; keep protected disclosure values out of attack inputs. `llm_judge_objective` ignores `judge_args`.
 - [ ] Leave built-in seeds untouched. For [adaptations](#33-customizing-datasets-for-your-assessment), copy the seed folder with a concise, meaningful name identifying the application/test, such as `seeds-myapp-sysmsg-extraction`. Edit that copy and regenerate; never patch generated output.
 - [ ] [Standalone inclusion](#standalone-dataset-entries), filters, languages, positions, and [transformations](#35-dataset-generation-options) match the requested coverage.
+- [ ] Optional [`--tag`](#tagging) adds a meaningful distinction and uses only a few concise letters; omit redundant tags.
 - [ ] Required judge/provider configuration passed [positive and negative fixtures](#judge-only-smoke-check); reuse checks while that configuration remains unchanged.
 
 ## Judge Integrity Rule
@@ -353,9 +354,13 @@ spikee generate --seed-folder datasets/seeds-my-assessment \
 
 ### Tagging
 
+For `spikee generate` and `spikee test`, use `--tag` only when it adds a meaningful distinction missing from the existing filename. Use a few concise letters, such as `smk` for smoke or `rag` for RAG coverage; omit it when redundant. Put detailed descriptions in `spikee.log`.
+
+Tags add to the filename; they do not replace or shorten it. Keep seed/dataset names concise too, since dataset names feed into result filenames. Before testing, follow the [result filename check](04-testing.md#result-filename-length), especially when combining long dataset names and target options.
+
 ```bash
-# Tag the output file for easy identification
-spikee generate --seed-folder datasets/seeds-my-assessment --tag my-first-run
+# Only when distinguishing a smoke dataset adds useful information
+spikee generate --seed-folder datasets/seeds-my-assessment --tag smk
 ```
 
 ## 3.6 Evaluation Strategy — Choosing the Right Judge

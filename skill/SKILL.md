@@ -69,12 +69,13 @@ Adversarial prompts and attacks normally flow through an agreed Spikee dataset, 
 - Keep secrets in `.env`; omit/redact their values, never non-secret arguments.
 - Read back the saved record and verify the command matches the authorized command about to run. Missing, incomplete, mismatched, or unwritable record: **do not execute**. Logging afterward does not satisfy this gate.
 - Autonomy/confirmation waivers never waive logging. Each retry or changed command needs a separate verified record.
-- After exit, update the same record: finish timestamp, exit status, `completed`/`failed`, generated dataset/result path. Do not defer to a later phase.
+- After exit, update the same record: finish timestamp, exit status, `completed`/`failed`, generated dataset/result path. Do not defer to a later phase. For an explicit run-and-forget test, record the last observed state and monitoring waiver; update the outcome when next inspected, without inventing completion.
 
 Every agent-run `spikee test` must use a named attachable `tmux` session, including smoke tests, baselines, attacks, resumes, and `--attack-only` runs. This does not depend on expected duration.
 
 - Include the proposed session in the test approval block.
 - After approval, create the empty session and run `tmux set-window-option -t <name> remain-on-exit on` **before** starting the test. Then tell the user its name and show the resolved `tmux attach-session -t <name>` in its own fenced `bash` code block.
+- Verify startup and monitor progress/errors through exit using Phase 4's [monitoring guidance](04-testing.md#mandatory-preview-and-attachable-session-for-spikee-test). Only an explicit run-and-forget request waives continued monitoring; still check startup and record the handoff.
 - Preserve the session and final output after success or failure, including non-zero exits. No automatic `kill-session`, `kill-window`, `kill-pane`, or other cleanup. Remove only at the user's request or confirmation that inspection is finished.
 - If `tmux` is unavailable, stop and offer installation or an attachable equivalent such as GNU Screen.
 - Skip the session only when the user explicitly declines it for that test; record the waiver.

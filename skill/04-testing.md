@@ -17,6 +17,7 @@ Verify applicable items before every `spikee test`, including retries. Reuse cur
 
 - [ ] Correct workspace, [selected environment](01-workspace-setup.md#11-choose-the-python-environment), target, and target options selected; relevant [target verification](02-custom-targets.md#28-prove-the-target-works) remains valid.
 - [ ] Exact [dataset paths](#41-basic-test-command) resolved; globs do not unintentionally include older datasets.
+- [ ] Optional `--tag` is meaningful and only a few letters; check the [complete result filename length](#result-filename-length), especially with long dataset names or target options.
 - [ ] Compact judge/criteria counts match the intended configuration. [`--judge-options`](#43-judges--how-success-is-determined) configures the backend—it does not select the judge.
 - [ ] A few representative inputs confirm [application-appropriate base inputs](03-dataset-generation.md#match-base-inputs-to-the-application), intended [composition](03-dataset-generation.md#32-how-composable-datasets-work), and [transformations](03-dataset-generation.md#35-dataset-generation-options); count/category summaries show expected coverage.
 - [ ] [Target](#41-basic-test-command), [judge](#43-judges--how-success-is-determined), and [attack-model](#44-dynamic-attacks) settings use their respective options; required modules and credentials are available.
@@ -30,6 +31,7 @@ Verify applicable items before every `spikee test`, including retries. Reuse cur
 
 - [ ] [Inspect the pane](#mandatory-preview-and-attachable-session-for-spikee-test): it shows testing progress, not a resume prompt or startup error.
 - [ ] [Early result metadata](05-results-analysis.md#54-direct-jsonl-inspection) confirms the intended judge/configuration before reporting the run as working.
+- [ ] Continue monitoring until exit unless the user explicitly requested run-and-forget; a launched tmux session alone does not establish a working or completed test.
 
 ## Mandatory Preview and Attachable Session for `spikee test`
 
@@ -39,7 +41,9 @@ Before execution, show the fully resolved test command without placeholders or s
 
 - If the user will run it, wait for their result.
 - For agent execution, create an empty session in the workspace and set `tmux set-window-option -t <name> remain-on-exit on` before launch. Show the resolved `tmux attach-session -t <name>` in its own fenced `bash` code block, then start the confirmed command inside it. Do not start before sending the attach command.
-- Monitor with `tmux capture-pane`. Whether the test succeeds or fails, leave the session and final pane output available for inspection. Never attach automatic `kill-session`, `kill-window`, or `kill-pane` cleanup to the command. Remove the session only after the user explicitly asks or confirms inspection is finished.
+- Inspect startup promptly with `tmux capture-pane`, then check periodically until exit. Watch for tracebacks, `File name too long`, resume prompts, repeated request/judge errors, and stalled progress. Inspect pane/process status and the actual exit status; a retained pane or existing result file alone does not prove success. Report failures promptly, record the observed outcome in `spikee.log`, and resolve the cause before retrying under the existing authorization rules.
+- Only an explicit run-and-forget request waives continued monitoring. Still check startup, report the observed state and attach command, and record the monitoring waiver with status `running` or `failed` as observed; do not claim completion without evidence. This waiver does not waive tmux.
+- Whether the test succeeds or fails, leave the session and final pane output available for inspection. Never attach automatic `kill-session`, `kill-window`, or `kill-pane` cleanup to the command. Remove the session only after the user explicitly asks or confirms inspection is finished.
 - If tmux is unavailable, stop and offer installation or an attachable equivalent. Never substitute foreground execution, `&`, or `nohup`.
 - Only the user's explicit no-session instruction waives tmux for that test. A confirmation waiver, urgency, or a short run does not.
 
@@ -66,7 +70,7 @@ spikee test --dataset datasets/my-dataset.jsonl \
             --sample <agreed-fraction> \
             --sample-seed 42 \
             --threads <agreed-n> \
-            --tag baseline-smoke
+            --tag smk
 ```
 
 Agree whether to use the full dataset or a sample, and state both the fraction and resulting entry count before approval. Do not choose a sample merely because the assistant considers the full dataset long. Do not interpret or scale a run with judge failures, malformed/empty target responses, widespread request errors, or missing category coverage.
@@ -119,7 +123,13 @@ spikee test --dataset "datasets/cybersec-2026-01-*.jsonl" \
 - `--dataset-folder <dir>`: Process all datasets in a folder.
 - `--target <name>`: Target module name (without `.py`).
 - `--target-options <string>`: Options to pass to the target (e.g., `provider/model`).
-- `--tag <string>`: Tag for the results filename.
+- `--tag <string>`: Optional results filename tag. Use only when meaningful, with a few concise letters (e.g. `smk`); follow the [tagging guidance](03-dataset-generation.md#tagging).
+
+### Result Filename Length
+
+Before `spikee test`, check the composed result basename, including target/options, dataset name, tag, separators, timestamp, and extension. Long combinations can exceed the destination filesystem's filename limit and fail with `File name too long`, even when each individual argument is valid. If needed, inspect the selected runtime's filename builder and compare the encoded basename length with the destination's limit; do not launch a test merely to probe it.
+
+Omit redundant tags and shorten descriptive names where needed without changing the selected model/options or dataset contents. A short tag alone cannot fix an oversized name. Preview and log the corrected command under the existing authorization rules, then verify startup in tmux.
 
 ## 4.2 Using the Built-In LLM Target
 
