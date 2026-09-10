@@ -115,7 +115,7 @@ Use this compact shape and add only fields that help the next session:
 ## Current State
 - Updated: <ISO timestamp>
 - Scope: <application and approved scope>
-- Runtime: <venv>; Python <version>; Spikee <version>
+- Runtime: <chosen environment; Python/Spikee paths>; Python <version>; Spikee <version>
 - Workspace: <status and timestamp/first observed>
 - Target: <path; turn mode; transport; verification status>
 - Credentials: <.env variable names and configured/needed status>
@@ -132,7 +132,7 @@ Use this compact shape and add only fields that help the next session:
 - <start timestamp>..<finish timestamp> | agent | test | completed; exit=0 | cwd=<path> | command=`<exact runnable CLI; secrets absent/redacted>` | purpose=<brief explanation> | tmux=<name> | attach=`tmux attach-session -t <name>` | result=<path>
 
 ## Activity
-- <timestamp> | setup | Created .venv; installed Spikee <version>; initialized workspace.
+- <timestamp> | setup | Selected <environment>; verified Spikee <version>; initialized workspace.
 - <timestamp> | target | Created targets/<name>.py; harmless live probe passed.
 - <timestamp> | result mutation | Archived <exact source path> to <exact destination path>; user requested cleanup.
 ```
@@ -148,12 +148,12 @@ Use this compact shape and add only fields that help the next session:
 Read `01-workspace-setup.md`.
 
 1. Locate the intended project directory and any existing `spikee.log`.
-2. Check for a local `.venv`, `venv`, or `env` before invoking Spikee. Inspect existing runtime metadata and compare its version with the bundled metadata. If creation, installation, or an update is needed, present the exact setup commands and wait for approval under the setup gate before running them.
-3. Never use or modify a system-wide Spikee installation unless the user explicitly chooses it after hearing that the project-local venv is preferred.
-4. After the local runtime is ready, detect or initialize the workspace with that venv's Spikee.
+2. Briefly check workspace `.venv` / `venv` / `env`, the active environment, and `/opt/spikee/.venv`. Ask which to use unless already chosen. Recommend `/opt/spikee/.venv` when present (the official dev container's preinstalled environment); offer local environments alongside it. Prefer a workspace `.venv` for new environments, while allowing the user's own environment.
+3. Inspect the selected runtime's metadata and compare its version with the bundled metadata. If creation, installation, or an update is needed, present the exact setup commands and wait for approval under the setup gate before running them. Never silently switch environments.
+4. After the selected runtime is ready, detect or initialize the workspace with its Spikee.
 5. Configure only providers needed for the agreed work. Do not enumerate every seed, target, plugin, attack, judge, or provider during setup; list the relevant category when a later decision needs it.
 
-**Exit gate:** a compatible Spikee installation exists in the local venv and the directory is an initialized workspace.
+**Exit gate:** a compatible Spikee installation exists in the user-selected environment and the directory is an initialized workspace.
 
 ### Phase 2 — Target
 

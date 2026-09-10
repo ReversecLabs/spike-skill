@@ -10,47 +10,40 @@
 - Reuse explicitly authorized concrete actions (e.g. “create `.venv` here and install `spikee[all]`”), approved command batches, or explicit autopilot covering setup. Do not reconfirm.
 - Setup approval does not authorize target creation.
 
-## 1.1 Establish the Project-Local Venv First
+## 1.1 Choose the Python Environment
 
-- Prefer a **project-local Python venv** containing Spikee; treat it as authoritative. The project may already be or become the workspace.
+- Prefer a **workspace `.venv`** for a new environment, but ask before choosing or creating one. The user may prefer their existing environment.
 - Do not start with unqualified `spikee --help`; it may select a system-wide installation.
 
 1. Identify the intended project directory and ask whether the user already has a Spikee workspace and where it is. If the location is available from context, inspect it directly instead of asking again.
-2. Look there for an existing local venv, preferring `.venv` and also recognizing `venv` or `env`.
-3. If a local venv exists, activate it and check Spikee and its version **inside that environment**:
+2. Briefly check for workspace `.venv`, `venv`, or `env`, an active environment (`VIRTUAL_ENV` / `CONDA_PREFIX` and Python/Spikee paths), and `/opt/spikee/.venv`. No recursive environment search.
+3. Show what exists and ask which environment to use. If `/opt/spikee/.venv` exists, recommend it: the official Spikee dev container preinstalls its environment there. If a local venv also exists, offer both paths. Always allow the user's own environment; if a new one is needed, recommend a workspace `.venv`. Wait for the choice unless the user already specified it; reuse that choice throughout the task.
+4. Check Spikee and its version **inside the selected environment**. For a venv:
 
 ```bash
 cd /path/to/project
-venv_dir=.venv  # or venv / env, whichever already exists
+venv_dir=/absolute/path/to/chosen/venv  # e.g. /opt/spikee/.venv or /path/to/project/.venv
 source "$venv_dir/bin/activate"
 "$venv_dir/bin/python" -m pip show spikee
 "$venv_dir/bin/python" -c "import spikee; print(spikee.__version__)"
 "$venv_dir/bin/spikee" --help
 ```
 
+- For another environment, use its activation method and resolved Python/Spikee executables. In later examples, `python`, `pip`, and `spikee` refer to the selected environment. Ensure it is also selected in fresh shells and tmux sessions.
 - Compare the installed version with `__version__` in bundled `spikee-src/spikee/__init__.py`; inspect only that metadata line.
-- On mismatch, warn and ask whether to update local Spikee or bundled source before continuing.
+- On mismatch, warn and ask whether to update the selected Spikee installation or bundled source before continuing.
 
-Do not fall back to a system `spikee` executable when Spikee is missing from the local venv. Explain that the preferred approach is to install it into the project venv, and offer to do so:
+If Spikee is missing, propose installing it in the selected environment under the setup gate. Do not silently switch environments:
 
 ```bash
 python -m pip install "spikee[all]"
 ```
 
-If the intended project directory exists but has no local venv, recommend creating one there and installing Spikee into it:
+Only if the user chooses a new workspace `.venv`, propose:
 
 ```bash
+mkdir -p /path/to/project  # only if the directory is missing
 cd /path/to/project
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install "spikee[all]"
-```
-
-If the intended project directory does not exist, recommend creating it first, then creating its `.venv` and installing Spikee:
-
-```bash
-mkdir workspace
-cd workspace
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install "spikee[all]"
@@ -58,19 +51,17 @@ python -m pip install "spikee[all]"
 
 - Run approved setup commands normally, without tmux.
 - Use/install system-wide Spikee only if the user explicitly chooses it after hearing the project-local venv preference.
-- After installation, print and compare the local version as above. Once compatible, check initialization artifacts: `datasets/`, `targets/`, `results/`, `.env`.
+- After installation, print and compare the selected runtime's version as above. Once compatible, check initialization artifacts: `datasets/`, `targets/`, `results/`, `.env`.
 
-*Note: `spikee[all]` installs all provider extras. For specific providers, install only the required extras in the active workspace venv, for example `python -m pip install "spikee[bedrock,ollama]"`.*
+*Note: `spikee[all]` installs all provider extras. For specific providers, install only the required extras in the selected environment, for example `python -m pip install "spikee[bedrock,ollama]"`.*
 
 ## 1.2 Initialize a Workspace
 
-If the workspace directory was newly created and has not yet been initialized, initialize it from the active local venv. All Spikee commands must run from this directory with its venv active.
+If the workspace has not yet been initialized, initialize it using the selected environment. Run all Spikee commands from the workspace directory with that environment active; the environment may live elsewhere.
 
 ```bash
 cd /path/to/workspace
-venv_dir=.venv  # or the existing venv / env directory
-source "$venv_dir/bin/activate"
-"$venv_dir/bin/spikee" init
+spikee init  # selected environment active
 ```
 
 This creates:
@@ -86,7 +77,7 @@ workspace/
 ```
 
 - After initialization, create missing workspace-root `spikee.log` using `SKILL.md`'s summary/activity format.
-- Record venv path, Python/Spikee versions, known/observed initialization timestamp, and sanitized install/init commands. Use first-observed time when creation time is unknown; never invent it.
+- Record the chosen environment and resolved Python/Spikee paths, versions, known/observed initialization timestamp, and sanitized install/init commands. Use first-observed time when creation time is unknown; never invent it.
 - Record `.env` names, never values.
 
 ## 1.3 Configure LLM Providers

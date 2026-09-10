@@ -15,7 +15,7 @@ This guide, `spikee list attacks -d`, and examples in the initialized workspace 
 
 Verify applicable items before every `spikee test`, including retries. Reuse current evidence and agreed decisions; use compact script summaries and targeted reads, not the entire dataset in the LLM's context. Follow the linked section when unsure and resolve mismatches before execution.
 
-- [ ] Correct workspace, [local runtime](01-workspace-setup.md#11-establish-the-project-local-venv-first), target, and target options selected; relevant [target verification](02-custom-targets.md#28-prove-the-target-works) remains valid.
+- [ ] Correct workspace, [selected environment](01-workspace-setup.md#11-choose-the-python-environment), target, and target options selected; relevant [target verification](02-custom-targets.md#28-prove-the-target-works) remains valid.
 - [ ] Exact [dataset paths](#41-basic-test-command) resolved; globs do not unintentionally include older datasets.
 - [ ] Compact judge/criteria counts match the intended configuration. [`--judge-options`](#43-judges--how-success-is-determined) configures the backend—it does not select the judge.
 - [ ] A few representative inputs confirm [application-appropriate base inputs](03-dataset-generation.md#match-base-inputs-to-the-application), intended [composition](03-dataset-generation.md#32-how-composable-datasets-work), and [transformations](03-dataset-generation.md#35-dataset-generation-options); count/category summaries show expected coverage.
@@ -51,7 +51,7 @@ During monitoring, follow the [user-facing style rules](SKILL.md#user-facing-bre
 
 Do not skip ahead when a gate is unresolved:
 
-1. Confirm the venv, target, dataset question, judges, credentials, endpoints, concurrency, and tmux availability.
+1. Confirm the selected environment, target, dataset question, judges, credentials, endpoints, concurrency, and tmux availability.
 2. Check `spikee.log` and results for a matching baseline: same application state, target/options, entries, and judge semantics.
 3. Count selected entries and calculate the workload ceiling and provider-call estimate.
 4. Present one approval block with the exact command and execution choice.

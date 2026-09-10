@@ -77,7 +77,7 @@ Ask only for details that remain unknown:
 ### Choose the Simplest Reliable Transport
 
 - Prefer reliably mapped HTTP/API or WebSocket traffic; otherwise inspect with available browser tools.
-- Propose Playwright transport inside a normal custom target only when rendered UI/browser-managed state is required. It is not built into Spikee; ask before installing it and browser dependencies in the workspace venv.
+- Propose Playwright transport inside a normal custom target only when rendered UI/browser-managed state is required. It is not built into Spikee; ask before installing it and browser dependencies in the selected environment.
 - Derive selectors/UI steps from the live app or supplied evidence; never invent them.
 - Concurrent execution must be thread-safe. Inspect shared mutable state/resources for races or cross-session interference; sharing alone proves neither.
 - Playwright can run concurrent browser sessions. Report concurrency constraints only with implementation/observed evidence, not from browser use alone; agree threads under Phase 4.

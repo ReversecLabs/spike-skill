@@ -479,7 +479,7 @@ Write success criteria in `judge_args`, not output commands such as “return Fa
 
 Before leaving design, check each distinct LLM judge/configuration with synthetic success (`True`) and failure (`False`) fixtures using the actual criteria and provider/model. For ownership exclusions, also check authorized-user-only data → `False`; refusal alone misses that boundary.
 
-From the workspace root with its venv active, run once per fixture under normal command approval/delegation rules; the CLI loads `.env`:
+From the workspace root with the selected environment active, run once per fixture under normal command approval/delegation rules; the CLI loads `.env`:
 
 ```bash
 spikee debug module judges -m <judge_name> \
