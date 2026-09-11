@@ -356,6 +356,8 @@ spikee generate --seed-folder datasets/seeds-my-assessment \
 
 For `spikee generate` and `spikee test`, use `--tag` only when it adds a meaningful distinction missing from the existing filename. Use a few concise letters, such as `smk` for smoke or `rag` for RAG coverage; omit it when redundant. Put detailed descriptions in `spikee.log`.
 
+For `spikee test --attack`, the attack name itself (e.g. `goat` or `crescendo`) is a useful concise tag; follow the [pre-test checklist](04-testing.md#before-testing-checklist).
+
 Tags add to the filename; they do not replace or shorten it. Keep seed/dataset names concise too, since dataset names feed into result filenames. Before testing, follow the [result filename check](04-testing.md#result-filename-length), especially when combining long dataset names and target options.
 
 ```bash

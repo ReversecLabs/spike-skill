@@ -17,7 +17,8 @@ Verify applicable items before every `spikee test`, including retries. Reuse cur
 
 - [ ] Correct workspace, [selected environment](01-workspace-setup.md#11-choose-the-python-environment), target, and target options selected; relevant [target verification](02-custom-targets.md#28-prove-the-target-works) remains valid.
 - [ ] Exact [dataset paths](#41-basic-test-command) resolved; globs do not unintentionally include older datasets.
-- [ ] Optional `--tag` is meaningful and only a few letters; check the [complete result filename length](#result-filename-length), especially with long dataset names or target options.
+- [ ] Optional `--tag` is meaningful and concise; check the [complete result filename length](#result-filename-length), especially with long dataset names or target options.
+- [ ] For `spikee test --attack`, prefer the attack name as the tag (e.g. `--attack goat --tag goat` or `--attack crescendo --tag crescendo`) to distinguish attack runs; retain an existing meaningful user-chosen tag.
 - [ ] Compact judge/criteria counts match the intended configuration. [`--judge-options`](#43-judges--how-success-is-determined) configures the backend—it does not select the judge.
 - [ ] A few representative inputs confirm [application-appropriate base inputs](03-dataset-generation.md#match-base-inputs-to-the-application), intended [composition](03-dataset-generation.md#32-how-composable-datasets-work), and [transformations](03-dataset-generation.md#35-dataset-generation-options); count/category summaries show expected coverage.
 - [ ] [Target](#41-basic-test-command), [judge](#43-judges--how-success-is-determined), and [attack-model](#44-dynamic-attacks) settings use their respective options; required modules and credentials are available.
