@@ -521,6 +521,7 @@ class MyEncoder(BasicPlugin):
 
 - **Hard gate for every agent-run `spikee generate`, including retries:** after authorization, log `starting` in `spikee.log` with timestamp, actor, working directory, exact runnable command, and brief purpose summary. Read back and verify before dispatch under [command logging](SKILL.md#commands-and-test-sessions). Incomplete/mismatched/missing records block execution; no condensed commands or summary-only placeholders. Omit/redact only secrets.
 - After exit, update the same record with finish time, exit status, and generated dataset path.
+- If [workspace versioning](SKILL.md#optional-workspace-versioning) is enabled, commit the generated dataset and updated `spikee.log`, then log the commit hash.
 - After generation/material revision, update summary/activity: assessment question, source seed/generated paths, entry form (plain objectives/complete/composed prompts), judge/provider decisions, actual count, user's size decision, brief QA outcome, next gate.
 - Keep the full CLI in `Executions`, not duplicated in `Activity`; keep dataset contents in their artifact, not the log.
 

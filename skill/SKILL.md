@@ -107,7 +107,7 @@ At session start, read its current summary and recent activity, then verify only
 
 - Never log chain-of-thought, transcripts, routine reads/listings, raw requests, full prompts/responses, dataset/result contents, or merely proposed commands. Authorized commands about to dispatch must be logged as `starting`.
 - For artifacts with unknown creation time, record first-observed time and mark creation time unknown.
-- Do not commit or share `spikee.log` unless requested.
+- Include `spikee.log` in commits when workspace versioning is enabled; otherwise commit or share it only when requested.
 
 Use this compact shape and add only fields that help the next session:
 
@@ -138,11 +138,20 @@ Use this compact shape and add only fields that help the next session:
 - <timestamp> | result mutation | Archived <exact source path> to <exact destination path>; user requested cleanup.
 ```
 
+## Optional Workspace Versioning
+
+- Offer once during setup; record the choice in `spikee.log`. Opt-in authorizes local initialization and milestone commits without repeated confirmation; pushes need separate authorization.
+- Detect an existing repository, including a parent repository; reuse it. Run `git init` only if none exists. Before staging, extend `.gitignore` for `.env`/secret variants, venvs, credentials, caches, and temporary files; allow a sanitized `.env.example` and `spikee.log`. Ignore rules do not protect already tracked files—inspect the staged diff.
+- Track authored targets, seeds, judges, attacks, non-secret configuration, generated datasets, results, and `spikee.log`. Commit the full dataset/result files; ensure ignore rules do not exclude them.
+- Checkpoint meaningful file changes, successful generation, and finished tests; useful failures may be checkpointed with their failed status. Stage only task-owned changes, preserve unrelated staged work, and skip empty commits.
+- Track `spikee.log` with each milestone. After committing, append the hash and purpose to the log; include that entry in the next milestone commit, without creating a recursive commit loop.
+
 ## Workflow
 
 - Narrow request: enter the relevant phase; verify only its prerequisites.
 - End-to-end assessment: follow phases in order under the collaboration gates. Exit gates establish readiness, not permission to advance.
 - At each handoff, log the outcome and next action's status: awaiting agreement or covered by delegation.
+- If workspace versioning is enabled, checkpoint meaningful authored-file changes at handoff.
 
 ### Phase 1 — Runtime and Workspace
 
@@ -153,6 +162,7 @@ Read `01-workspace-setup.md`.
 3. Inspect the selected runtime's metadata and compare its version with the bundled metadata. If creation, installation, or an update is needed, present the exact setup commands and wait for approval under the setup gate before running them. Never silently switch environments.
 4. After the selected runtime is ready, detect or initialize the workspace with its Spikee.
 5. Configure only providers needed for the agreed work. Do not enumerate every seed, target, plugin, attack, judge, or provider during setup; list the relevant category when a later decision needs it.
+6. Offer [workspace versioning](#optional-workspace-versioning) unless a choice is recorded; if enabled, prepare ignore rules and the initial checkpoint.
 
 **Exit gate:** a compatible Spikee installation exists in the user-selected environment and the directory is an initialized workspace.
 

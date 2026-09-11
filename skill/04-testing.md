@@ -374,6 +374,7 @@ The module calls the supplied `target_module.process_input(...)` through the Spi
 - **Hard gate for every agent-run `spikee test`:** after authorization and before dispatch in the prepared session, log `starting` in `spikee.log`: ISO timestamp, `actor=agent`, working directory, exact runnable command, brief purpose summary, session manager/name, exact attach command.
 - Read back and verify under [command logging](SKILL.md#commands-and-test-sessions). Include every argument/value/path and required quoting; omit/redact only secrets, kept in `.env`. Missing/incomplete/mismatched records or logging failure block launch; no condensed commands or summary-only placeholders. Each retry/changed command needs a separate verified record.
 - After exit, update the same record: finish time, exit status, `completed`/`failed`, actual attempts when available, result path, reused baseline path.
+- If [workspace versioning](SKILL.md#optional-workspace-versioning) is enabled, commit the result files and updated `spikee.log`, then log the commit hash; for run-and-forget, do this when completion is next verified.
 - Update summary/activity: total/selected entries, planned attempt ceiling, agreed threads/known concurrency limits, target/dataset, judge/attack configuration, outcome, next gate.
 - Keep Current State's command-confirmation mode and autonomy scope accurate. Record user-approved no-session waivers and manual deviations explicitly and separately.
 - Do not mark unexecuted proposals `starting`/`completed` or paste console output/result contents into the log.
