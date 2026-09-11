@@ -169,7 +169,7 @@ Every dataset entry has a `judge_name` field that determines how Spikee evaluate
 
 ### Built-In Basic Judges (No LLM required)
 
-- `canary`: Checks if `judge_args` string appears in the response (case-insensitive).
+- `canary`: Checks if `judge_args` string appears in the response (case-sensitive).
 - `regex`: Checks if `judge_args` regex pattern matches the response.
 
 *Note: These judges run locally and do **not** require `--judge-options`.*
@@ -178,8 +178,9 @@ Every dataset entry has a `judge_name` field that determines how Spikee evaluate
 
 - `llm_judge_harmful`: Evaluates for harmful content.
 - `llm_judge_objective`: Checks whether the response fulfills or materially advances the input instruction's objective; suited to instruction-only datasets. The bundled implementation ignores `judge_args`; use Phase 3's guidance for separate custom criteria.
-- `llm_judge_output_criteria`: Evaluates custom criteria from `judge_args`.
-- `llm_judge_output_only`: Like output_criteria but only sees the response (not the prompt).
+- `llm_judge_output_criteria`: Evaluates the response against custom criteria from `judge_args`; it does not receive the input prompt.
+
+See [judge arguments and verdict examples](03b-judges.md).
 
 *Note: These judges require an LLM to perform semantic evaluation. You **must** provide the `--judge-options` flag.*
 
@@ -204,21 +205,22 @@ Create in `judges/` in your workspace:
 # judges/my_custom_judge.py
 from spikee.templates.judge import Judge
 from spikee.utilities.hinting import ModuleDescriptionHint, ModuleOptionsHint
-from spikee.utilities.enums import ModuleTag
 
 class MyCustomJudge(Judge):
     def get_description(self) -> ModuleDescriptionHint:
-        return [ModuleTag.SINGLE], "My custom judge"
+        return [], "Checks a configured marker (minimal custom-judge API example)"
 
     def get_available_option_values(self) -> ModuleOptionsHint:
         return [], False
 
-    def judge(self, prompt, response, judge_args, judge_options=None) -> bool:
+    def judge(self, llm_input: str, llm_output: str, judge_args, judge_options=None) -> bool:
         """Return True if the attack succeeded, False otherwise."""
-        return "SECRET_DATA" in str(response)
+        return isinstance(judge_args, str) and bool(judge_args) and judge_args in llm_output
 ```
 
 > Start with the initialized workspace's `judges/` examples and `spikee-src/docs/09_judges.md`. Inspect judge base-class source only for an unresolved custom-judge contract or debugging issue.
+
+The example demonstrates the required annotated `llm_input`/`llm_output` contract; use the existing `canary` judge for ordinary marker matching.
 
 ## 4.4 Dynamic Attacks
 
@@ -305,18 +307,20 @@ spikee test --dataset datasets/my-dataset.jsonl \
 
 ## 4.6 Resume and Re-run
 
-Spikee auto-detects previous results files and offers to resume:
+Without an explicit resume/fresh flag, matching results make Spikee pause in an interactive terminal (including tmux) and offer a choice: resume a file or start fresh. Without a terminal, it starts fresh instead. Pass `--resume-file`, `--auto-resume`, or `--no-auto-resume` on agent-run commands to apply the agreed choice without a blocking prompt.
+
+`--resume-file`, `--auto-resume`, and interactive resume append to the selected file. Completed entries are skipped; repeated resumes keep the same results path. Unfinished entries restart from the beginning. `--no-auto-resume` creates a fresh file.
 
 ```bash
-# Auto-resume from latest matching results file
+# Append to the latest matching results file
 spikee test --dataset datasets/my-dataset.jsonl --target my_target --auto-resume --threads <agreed-n>
 
-# Resume from a specific file
+# Append remaining entries to this file
 spikee test --dataset datasets/my-dataset.jsonl --target my_target \
-            --resume-file results/results_my_target_cybersec-2026-01_1234567890.jsonl \
+            --resume-file results/results_my_target_my-dataset_1234567890.jsonl \
             --threads <agreed-n>
 
-# Force fresh start (no resume)
+# Start a new results file
 spikee test --dataset datasets/my-dataset.jsonl --target my_target --no-auto-resume --threads <agreed-n>
 ```
 
@@ -372,6 +376,7 @@ The module calls the supplied `target_module.process_input(...)` through the Spi
 - **Hard gate for every agent-run `spikee test`:** after authorization and before dispatch in the prepared session, log `starting` in `spikee.log`: ISO timestamp, `actor=agent`, working directory, exact runnable command, brief purpose summary, session manager/name, exact attach command.
 - Read back and verify under [command logging](SKILL.md#commands-and-test-sessions). Include every argument/value/path and required quoting; omit/redact only secrets, kept in `.env`. Missing/incomplete/mismatched records or logging failure block launch; no condensed commands or summary-only placeholders. Each retry/changed command needs a separate verified record.
 - After exit, update the same record: finish time, exit status, `completed`/`failed`, actual attempts when available, result path, reused baseline path.
+- If [workspace versioning](SKILL.md#optional-workspace-versioning) is enabled, commit the result files and updated `spikee.log`, then log the commit hash; for run-and-forget, do this when completion is next verified.
 - Update summary/activity: total/selected entries, planned attempt ceiling, agreed threads/known concurrency limits, target/dataset, judge/attack configuration, outcome, next gate.
 - Keep Current State's command-confirmation mode and autonomy scope accurate. Record user-approved no-session waivers and manual deviations explicitly and separately.
 - Do not mark unexecuted proposals `starting`/`completed` or paste console output/result contents into the log.

@@ -107,7 +107,7 @@ At session start, read its current summary and recent activity, then verify only
 
 - Never log chain-of-thought, transcripts, routine reads/listings, raw requests, full prompts/responses, dataset/result contents, or merely proposed commands. Authorized commands about to dispatch must be logged as `starting`.
 - For artifacts with unknown creation time, record first-observed time and mark creation time unknown.
-- Do not commit or share `spikee.log` unless requested.
+- Include `spikee.log` in commits when workspace versioning is enabled; otherwise commit or share it only when requested.
 
 Use this compact shape and add only fields that help the next session:
 
@@ -138,11 +138,20 @@ Use this compact shape and add only fields that help the next session:
 - <timestamp> | result mutation | Archived <exact source path> to <exact destination path>; user requested cleanup.
 ```
 
+## Optional Workspace Versioning
+
+- Offer once during setup; record the choice in `spikee.log`. Opt-in authorizes local initialization and milestone commits without repeated confirmation; pushes need separate authorization.
+- Detect an existing repository, including a parent repository; reuse it. Run `git init` only if none exists. Before staging, extend `.gitignore` for `.env`/secret variants, venvs, credentials, caches, and temporary files; allow a sanitized `.env.example` and `spikee.log`. Ignore rules do not protect already tracked files—inspect the staged diff.
+- Track authored targets, seeds, judges, attacks, non-secret configuration, generated datasets, results, and `spikee.log`. Commit the full dataset/result files; ensure ignore rules do not exclude them.
+- Checkpoint meaningful file changes, successful generation, and finished tests; useful failures may be checkpointed with their failed status. Stage only task-owned changes, preserve unrelated staged work, and skip empty commits.
+- Track `spikee.log` with each milestone. After committing, append the hash and purpose to the log; include that entry in the next milestone commit, without creating a recursive commit loop.
+
 ## Workflow
 
 - Narrow request: enter the relevant phase; verify only its prerequisites.
 - End-to-end assessment: follow phases in order under the collaboration gates. Exit gates establish readiness, not permission to advance.
 - At each handoff, log the outcome and next action's status: awaiting agreement or covered by delegation.
+- If workspace versioning is enabled, checkpoint meaningful authored-file changes at handoff.
 
 ### Phase 1 — Runtime and Workspace
 
@@ -153,6 +162,7 @@ Read `01-workspace-setup.md`.
 3. Inspect the selected runtime's metadata and compare its version with the bundled metadata. If creation, installation, or an update is needed, present the exact setup commands and wait for approval under the setup gate before running them. Never silently switch environments.
 4. After the selected runtime is ready, detect or initialize the workspace with its Spikee.
 5. Configure only providers needed for the agreed work. Do not enumerate every seed, target, plugin, attack, judge, or provider during setup; list the relevant category when a later decision needs it.
+6. Offer [workspace versioning](#optional-workspace-versioning) unless a choice is recorded; if enabled, prepare ignore rules and the initial checkpoint.
 
 **Exit gate:** a compatible Spikee installation exists in the user-selected environment and the directory is an initialized workspace.
 
@@ -178,8 +188,10 @@ Read `02-custom-targets.md`; read `02b-advanced-targets.md` only for advanced au
 
 Read `03-dataset-generation.md`; complete its [before-generation checklist](03-dataset-generation.md#before-generation-checklist) before generating.
 
+For judge choice, good/bad arguments and verdict examples, read [03b-judges.md](03b-judges.md).
+
 1. Before customizing seeds or generating datasets, clarify any unresolved goals and present a coverage plan: the question each dataset answers, suitable built-in seeds, and gaps requiring customization. Get the user's agreement unless they have explicitly delegated dataset decisions for this step or the whole task; then choose within that scope and state the plan. Follow Phase 3's design gate.
-2. Use `canary` (exact string/keyword) or `regex` (precise pattern) only when matching fully determines agreed success. Check the complete input and plausible failure/success responses offline; echoes or refusals must not masquerade as success. Keep disclosure markers out of attack inputs. Require an LLM judge for semantic/contextual/ambiguous criteria or unavoidable misclassification; no keyword heuristics. Preserve existing judge names/arguments unless the user explicitly approves changes.
+2. Use `canary` (exact string/keyword) or `regex` (precise pattern) only when matching fully determines agreed success. Check the complete input and plausible failure/success responses offline: an input echo does not prove retrieval, while a refusal that still discloses protected data can be a success. Keep disclosure markers out of attack inputs. Require an LLM judge for semantic/contextual/ambiguous criteria or unavoidable misclassification; no keyword heuristics. Preserve existing judge names/arguments unless the user explicitly approves changes.
 3. When an LLM judge is required, agree the provider and model, then run Phase 3's positive/negative judge smoke check. For hosted providers, name the `.env` key; for local providers, obtain the endpoint/model and supported concurrency. If access is unavailable or unclear, stop and offer configuration or postponement. Do not fall back to regex/canary for the same semantic objective. A user-approved narrower objective must be labelled separately and satisfy the deterministic selection rule itself.
 4. Estimate dataset size when practical. After generation, report the actual entry count without declaring it large or small. Ask whether it is acceptable unless that count or sizing rule was already approved or sizing decisions were delegated. Do not resize without approval or delegation.
 5. Inspect representative entries offline. Do not submit them manually to the application.
@@ -204,7 +216,7 @@ Read `04-testing.md`; complete its [before-testing](04-testing.md#before-testing
 Read `05-results-analysis.md`.
 
 1. Verify the intended result path. Run `spikee results analyze --result-file <path>` first, capture its output, and present the key figures concisely; show full output only when requested or needed to explain a finding.
-2. Use `spikee results extract` for standard categories. Inspect JSONL directly for specific questions or validation, stating any custom filter or calculation.
+2. Filter results with Spikee Filter Language (SFL): `spikee results extract --query` or the WebUI Results search. See [examples and syntax reference](05-results-analysis.md#53-extract-specific-results). Inspect JSONL directly when useful for review or calculations.
 3. Offer HTML output or the loopback-bound web UI when visual exploration helps.
 4. Route runtime/workspace failures to Phase 1, target failures to Phase 2, coverage/judge problems to Phase 3, and sound baselines needing stronger attempts to Phase 4.
 
