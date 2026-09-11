@@ -15,7 +15,7 @@ Any new or repeated `spikee test` proposed during analysis is Phase 4 work and m
 
 The CLI subcommand is `analyze` (American spelling): `spikee results analyze`. There is no `spikee results --analyse` form in this bundled version.
 
-- Allow read-only JSONL inspection (`jq`, `rg`, parsing scripts) for specific questions, prompt/response review, error diagnosis, severity, judge validation, or calculations unavailable in Spikee. Prefer `spikee results extract` for supported category filters.
+- Allow read-only JSONL inspection (`jq`, `rg`, parsing scripts) for specific questions, prompt/response review, error diagnosis, severity, judge validation, or calculations unavailable in Spikee. Prefer `spikee results extract --query` for filters supported by SFL.
 - State files/filters used; distinguish custom calculations from Spikee metrics. Never edit the original artifact in place during inspection.
 - Preserve results, including stale ones. Editing, replacing, moving, archiving, or deleting requires an explicit user request; never infer cleanup permission.
 - After required authorization, immediately before mutation, log `starting` under `Executions` in `spikee.log`: timestamp, actor, operation, exact source/destination paths, reason, full command/action. Logging failure blocks mutation.
@@ -99,31 +99,26 @@ Results are broken down by **Jailbreak Type**, **Instruction Type**, **Plugin**,
 
 ## 5.3 Extract Specific Results
 
+Use **Spikee Filter Language (SFL)** with the required `--query` argument; the same expression works in the WebUI Results search. It replaces `--category`, `--custom-search`, and the old `field:value` / `!term` syntax.
+
 ```bash
-# Extract all successful attacks to a new file
-spikee results extract --result-file results/results_my_target_1234567890.jsonl --category success
-
-# Extract failures
-spikee results extract --result-file results/results_my_target_1234567890.jsonl --category failure
-
-# Extract guardrail triggers
-spikee results extract --result-file results/results_my_target_1234567890.jsonl --category guardrail
-
-# Custom search — find specific error patterns
+# Extract successful XSS results to a new file
 spikee results extract --result-file results/results_my_target_1234567890.jsonl \
-                       --category custom \
-                       --custom-search "error:timeout"
-
-# Custom search on specific field
-spikee results extract --result-file results/results_my_target_1234567890.jsonl \
-                       --category custom \
-                       --custom-search "instruction_type:xss"
-
-# Inverse search (entries that DON'T match)
-spikee results extract --result-file results/results_my_target_1234567890.jsonl \
-                       --category custom \
-                       --custom-search "!jailbreak_type:no-jailbreak"
+                       --query 'success = true AND instruction_type = "xss"'
 ```
+
+| Find | SFL query |
+|---|---|
+| Successful entries | `success = true` |
+| Failed entries (excluding unjudged) | `success = false` |
+| Guardrail blocks | `guardrail = true` |
+| Timeout errors | `error LIKE "%timeout%"` |
+| Successful responses containing a canary | `success = true AND response LIKE "%canary%"` |
+| Successful entries with at least three attempts | `success = true AND attempts >= 3` |
+
+Combine conditions with `AND`, `OR`, `NOT`, and parentheses. Quote strings; leave booleans/numbers unquoted. `LIKE` matches case-insensitively (`%` = any sequence, `_` = one character); `CONTAINS` is unsupported. Missing fields do not match `!=`; `NOT field EXISTS` matches missing or null fields.
+
+For full syntax, precedence, nested fields, and collection matching, read [Spikee's SFL reference](spikee-src/docs/11_results.md#spikee-filter-language-sfl). Extraction selects whole result rows, preserving nested history. Record the source and query; a filtered subset is not the original run's success-rate denominator.
 
 ## 5.4 Direct JSONL Inspection
 
@@ -181,7 +176,7 @@ spikee results dataset-comparison \
 
 ## 5.7 HTML and Web UI
 
-Offer the HTML report for a static artifact or the web UI for interactive exploration. `spikee webui` covers result browsing and filtering as well as Generate, Test, and Jobs. It is optional; do not ignore the console summary in favour of launching a service the user did not request.
+Offer the HTML report for a static artifact or the web UI for interactive exploration. `spikee webui` covers result browsing and filtering as well as Generate, Test, and Jobs. Use the [same SFL queries](#53-extract-specific-results) in its Results search. It is optional; do not ignore the console summary in favour of launching a service the user did not request.
 
 ```bash
 spikee webui                              # Default: 127.0.0.1:8080

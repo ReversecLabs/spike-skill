@@ -216,7 +216,7 @@ Read `04-testing.md`; complete its [before-testing](04-testing.md#before-testing
 Read `05-results-analysis.md`.
 
 1. Verify the intended result path. Run `spikee results analyze --result-file <path>` first, capture its output, and present the key figures concisely; show full output only when requested or needed to explain a finding.
-2. Use `spikee results extract` for standard categories. Inspect JSONL directly for specific questions or validation, stating any custom filter or calculation.
+2. Filter results with Spikee Filter Language (SFL): `spikee results extract --query` or the WebUI Results search. See [examples and syntax reference](05-results-analysis.md#53-extract-specific-results). Inspect JSONL directly when useful for review or calculations.
 3. Offer HTML output or the loopback-bound web UI when visual exploration helps.
 4. Route runtime/workspace failures to Phase 1, target failures to Phase 2, coverage/judge problems to Phase 3, and sound baselines needing stronger attempts to Phase 4.
 
