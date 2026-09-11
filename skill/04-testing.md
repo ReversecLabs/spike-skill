@@ -307,18 +307,20 @@ spikee test --dataset datasets/my-dataset.jsonl \
 
 ## 4.6 Resume and Re-run
 
-Spikee auto-detects previous results files and offers to resume:
+Without an explicit resume/fresh flag, matching results make Spikee pause in an interactive terminal (including tmux) and offer a choice: resume a file or start fresh. Without a terminal, it starts fresh instead. Pass `--resume-file`, `--auto-resume`, or `--no-auto-resume` on agent-run commands to apply the agreed choice without a blocking prompt.
+
+`--resume-file`, `--auto-resume`, and interactive resume append to the selected file. Completed entries are skipped; repeated resumes keep the same results path. Unfinished entries restart from the beginning. `--no-auto-resume` creates a fresh file.
 
 ```bash
-# Auto-resume from latest matching results file
+# Append to the latest matching results file
 spikee test --dataset datasets/my-dataset.jsonl --target my_target --auto-resume --threads <agreed-n>
 
-# Resume from a specific file
+# Append remaining entries to this file
 spikee test --dataset datasets/my-dataset.jsonl --target my_target \
-            --resume-file results/results_my_target_cybersec-2026-01_1234567890.jsonl \
+            --resume-file results/results_my_target_my-dataset_1234567890.jsonl \
             --threads <agreed-n>
 
-# Force fresh start (no resume)
+# Start a new results file
 spikee test --dataset datasets/my-dataset.jsonl --target my_target --no-auto-resume --threads <agreed-n>
 ```
 
