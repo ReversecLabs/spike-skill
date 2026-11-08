@@ -159,7 +159,7 @@ Read `01-workspace-setup.md`.
 
 1. Locate the intended project directory and any existing `spikee.log`.
 2. Briefly check workspace `.venv` / `venv` / `env`, the active environment, and `/opt/spikee/.venv`. Ask which to use unless already chosen. Recommend `/opt/spikee/.venv` when present (the official dev container's preinstalled environment); offer local environments alongside it. Prefer a workspace `.venv` for new environments, while allowing the user's own environment.
-3. Inspect the selected runtime's metadata and compare its version with the bundled metadata. If creation, installation, or an update is needed, present the exact setup commands and wait for approval under the setup gate before running them. Never silently switch environments.
+3. Use the latest published Spikee package for new installations (`python -m pip install -U spikee`). Refresh source references with `python3 <skill-directory>/update-references.py`; this follows upstream `main`, with no release or commit pin. Reference metadata is not a required runtime version: never downgrade or pin the installed package to match it. For an existing environment, retain the user's selection and follow the setup approval gate for upgrades unless already authorized. Use installed help and interfaces for executable commands.
 4. After the selected runtime is ready, detect or initialize the workspace with its Spikee.
 5. Configure only providers needed for the agreed work. Do not enumerate every seed, target, plugin, attack, judge, or provider during setup; list the relevant category when a later decision needs it.
 6. Offer [workspace versioning](#optional-workspace-versioning) unless a choice is recorded; if enabled, prepare ignore rules and the initial checkpoint.

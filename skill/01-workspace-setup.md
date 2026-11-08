@@ -30,13 +30,13 @@ source "$venv_dir/bin/activate"
 ```
 
 - For another environment, use its activation method and resolved Python/Spikee executables. In later examples, `python`, `pip`, and `spikee` refer to the selected environment. Ensure it is also selected in fresh shells and tmux sessions.
-- Compare the installed version with `__version__` in bundled `spikee-src/spikee/__init__.py`; inspect only that metadata line.
-- On mismatch, warn and ask whether to update the selected Spikee installation or bundled source before continuing.
+- Use the installed runtime's help and interfaces. Refresh current public source/docs with `python3 <skill-directory>/update-references.py`; do not treat reference metadata as a required runtime version or downgrade to match it.
+- A version difference alone is not a compatibility failure. Check only the interfaces needed for the task; do not stop for a minor version mismatch.
 
 If Spikee is missing, propose installing it in the selected environment under the setup gate. Do not silently switch environments:
 
 ```bash
-python -m pip install "spikee[all]"
+python -m pip install -U "spikee[all]"
 ```
 
 Only if the user chooses a new workspace `.venv`, propose:
@@ -46,14 +46,14 @@ mkdir -p /path/to/project  # only if the directory is missing
 cd /path/to/project
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install "spikee[all]"
+python -m pip install -U "spikee[all]"
 ```
 
 - Run approved setup commands normally, without tmux.
 - Use/install system-wide Spikee only if the user explicitly chooses it after hearing the project-local venv preference.
-- After installation, print and compare the selected runtime's version as above. Once compatible, check initialization artifacts: `datasets/`, `targets/`, `results/`, `.env`.
+- After installation, record the installed version and check the required interfaces. Once ready, check initialization artifacts: `datasets/`, `targets/`, `results/`, `.env`.
 
-*Note: `spikee[all]` installs all provider extras. For specific providers, install only the required extras in the selected environment, for example `python -m pip install "spikee[bedrock,ollama]"`.*
+*Note: `spikee[all]` installs all provider extras. For specific providers, install only the required extras in the selected environment, for example `python -m pip install -U "spikee[bedrock,ollama]"`.*
 
 ## 1.2 Initialize a Workspace
 
@@ -103,10 +103,10 @@ For llama.cpp:
 | TogetherAI | None — included by default | `TOGETHER_API_KEY` |
 | OpenRouter | None — included by default | `OPENROUTER_API_KEY` |
 | Custom OpenAI-compatible endpoint | None — included by default | `CUSTOM_API_URL`, `CUSTOM_API_KEY` |
-| AWS Bedrock | `python -m pip install "spikee[bedrock]"` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION` |
-| Azure OpenAI | `python -m pip install "spikee[azure]"` | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_VERSION` |
-| Groq | `python -m pip install "spikee[groq]"` | `GROQ_API_KEY=gsk_...` |
-| Ollama (local) | `python -m pip install "spikee[ollama]"` | `OLLAMA_URL` (optional; defaults to `http://localhost:11434`) |
+| AWS Bedrock | `python -m pip install -U "spikee[bedrock]"` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION` |
+| Azure OpenAI | `python -m pip install -U "spikee[azure]"` | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_VERSION` |
+| Groq | `python -m pip install -U "spikee[groq]"` | `GROQ_API_KEY=gsk_...` |
+| Ollama (local) | `python -m pip install -U "spikee[ollama]"` | `OLLAMA_URL` (optional; defaults to `http://localhost:11434`) |
 | llama.cpp server (local) | None — included by default | `LLAMACPP_URL` (optional; defaults to `http://localhost:8080/`) |
 
 If the user doesn't plan to use LLM judges or attacks (e.g., only using `canary`/`regex` judges and no dynamic attacks), **no provider configuration is needed** — skip to 1.4.

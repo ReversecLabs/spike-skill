@@ -6,3 +6,6 @@ dist/
 build/
 .venv/
 env/
+
+# Downloaded current upstream reference source
+/skill/spikee-src/

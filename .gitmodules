@@ -1,5 +1,0 @@
-[submodule "spikee"]
-	path = skill/spikee-src
-	url = https://github.com/ReversecLabs/spikee.git
-	shallow = true
-	branch = main

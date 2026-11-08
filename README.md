@@ -12,7 +12,7 @@ When loaded into your AI coding agent, this skill enables it to:
 - **Run tests with dynamic attacks** — crescendo, best-of-N, LLM jailbreaker, and more
 - **Analyse results** — success rates, breakdowns, re-judging, cross-target comparison
 
-The skill includes the full spikee source code and documentation as a submodule, so the agent can read base class contracts, sample implementations, and reference docs on demand.
+The skill includes the full spikee source code and documentation as a local reference checkout, so the agent can read base class contracts, sample implementations, and reference docs on demand.
 
 The workflow is collaborative by default: the agent inspects the current phase, clarifies unresolved decisions, completes agreed work, and checks in before moving to another phase or iteration. Passing a technical check does not authorize the rest of the assessment. Explicitly request autopilot to delegate phase progression and routine decisions within the agreed scope and limits.
 
@@ -22,7 +22,8 @@ The workflow is collaborative by default: the agent inspects the current phase, 
 
 ```bash
 # Clone into Pi's skills directory
-git clone --recurse-submodules https://github.com/kyuz0/spikee-skill.git
+git clone https://github.com/ReversecLabs/spike-skill.git spikee-skill
+python3 spikee-skill/skill/update-references.py
 cp -r spikee-skill/skill ~/.pi/agent/skills/spikee-skill
 
 # Or symlink (stays in sync with repo updates)
@@ -33,7 +34,8 @@ ln -s "$(pwd)/spikee-skill/skill" ~/.pi/agent/skills/spikee-skill
 
 ```bash
 # Clone and symlink into your project
-git clone --recurse-submodules https://github.com/kyuz0/spikee-skill.git
+git clone https://github.com/ReversecLabs/spike-skill.git spikee-skill
+python3 spikee-skill/skill/update-references.py
 ln -s "$(pwd)/spikee-skill/skill" /path/to/your/project/.claude/skills/spikee-skill
 ```
 
@@ -41,24 +43,28 @@ ln -s "$(pwd)/spikee-skill/skill" /path/to/your/project/.claude/skills/spikee-sk
 
 ```bash
 # Clone and symlink into your project
-git clone --recurse-submodules https://github.com/kyuz0/spikee-skill.git
+git clone https://github.com/ReversecLabs/spike-skill.git spikee-skill
+python3 spikee-skill/skill/update-references.py
 ln -s "$(pwd)/spikee-skill/skill" /path/to/your/project/.cursor/rules/spikee-skill
 ```
 
 ### Generic / Other Agents
 
-Point your agent to `skill/SKILL.md` as the skill entry point. The agent needs read access to the entire `skill/` directory including the `spikee-src/` submodule.
+Point your agent to `skill/SKILL.md` as the skill entry point. The agent needs read access to the entire `skill/` directory including the generated `spikee-src/` reference folder.
 
 ## Updating
 
-To update the bundled spikee source code to the latest version:
+Fetch the current public Spikee source and documentation before using the skill:
 
 ```bash
-cd spikee-skill
-git submodule update --remote skill/spikee-src
-git add skill/spikee-src
-git commit -m "Update spikee submodule to latest"
+python3 spikee-skill/skill/update-references.py
 ```
+
+The references follow upstream `main`; the skill does not pin a Spikee release or
+submodule commit. New installations use `pip install -U spikee` for the latest
+published package. Reference source and the published package can differ: use the
+installed runtime's help and interfaces when writing executable commands. Do not
+downgrade an installed package to match reference metadata.
 
 ## Skill Structure
 
@@ -71,7 +77,7 @@ skill/
 ├── 03b-judges.md               # Judge choice, arguments, version pitfalls, validation
 ├── 04-testing.md               # Run tests, attacks, judges, runtime options
 ├── 05-results-analysis.md      # Analyse, extract, re-judge, iterate
-└── spikee-src/                 # Spikee source code + docs (git submodule)
+└── spikee-src/                 # Current upstream source + docs (generated)
     ├── docs/                   # Official documentation
     ├── spikee/                 # Source code (templates, attacks, plugins, etc.)
     └── workspace/              # Sample implementations
@@ -79,4 +85,4 @@ skill/
 
 ## License
 
-This skill is licensed under Apache-2.0. Spikee itself is licensed under its own terms — see [spikee/LICENSE.txt](skill/spikee-src/LICENSE.txt).
+This skill is licensed under Apache-2.0. Spikee itself is licensed under its own terms — see [LICENSE.txt](skill/spikee-src/LICENSE.txt).
