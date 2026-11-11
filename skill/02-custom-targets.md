@@ -27,50 +27,43 @@ This phase maps an AI interaction; it is not a general web-application assessmen
 - With only an application URL, make one harmless interaction with a user-identified or clearly labelled AI feature; inspect its traffic only. If several features are plausible, ask which is in scope first.
 - If the interface remains unclear, request a representative capture from that feature, preferably a Burp Suite/DevTools request and response.
 
-### Samples Are Never Evidence About the Real Application
+### Use observed application evidence
 
-Workspace sample targets exist only to demonstrate Spikee base classes, method signatures, option parsing, session handling, response types, and error handling. **Every application-specific value in a sample is fictional unless independently confirmed from the real application.** This includes names, branding, hostnames, paths, methods, headers, request bodies, response fields, credentials, models, feature descriptions, guardrails, and comments.
+Workspace samples demonstrate Spikee classes, methods and error handling. Their application names, endpoints, request fields, authentication and behaviour are examples, not facts about the application under test. Establish the real contract through supplied docs/traffic or authorized interaction with the selected feature. Do not guess/probe sample endpoints or fetch an application's source repository based on similar branding or behaviour. Ask before an external source lookup not supplied or authorized by the user; give the proposed URL and reason.
 
-Apply these as hard stop rules:
+If authorized browser inspection can establish the request, use it. If the page cannot render because a third-party frontend dependency is unavailable, do not keep diagnosing the renderer. Use the application's own scripts and observed requests to map the selected feature when they provide the contract; otherwise switch to another available inspection method or ask for a capture. Spikee implementation source answers framework questions, not application questions.
 
-- Never conclude that the application under test is the sample application, an upstream demo, or a related project because names, text, endpoints, or behavior appear similar.
-- Never copy or probe a sample hostname, route, request schema, or authentication flow against the real application without independent evidence from the user, supplied documentation, captured traffic, or one harmless observation of the real feature.
-- Never search GitHub or the web for the sample application's source, the supposed upstream project, or source code guessed from similarity. A user-supplied application URL or authorization to build a target does not authorize external source-code discovery.
-- If you believe an external repository or source lookup is needed and the user did not provide it, **STOP before making the request**. Tell the user the exact URL you propose to access, why it is necessary, and ask for approval. Normally, ask for the real feature's Burp/DevTools request and response instead.
-- Reading local Spikee implementation source is allowed only for an unresolved Spikee contract or an observed Spikee failure. Never use it to infer the real application's API.
-
-Similarity is not confirmation. If a sample happens to match a fact already established from the real application, use the real evidence and record that provenance; do not cite the sample as proof.
-
-> "What is the application URL, and can you paste a representative Burp/DevTools request and response? Please redact credential values but leave header and cookie names visible."
-
-### Turn Mode Means Conversation State
+### Turn Mode Means Context Across Messages
 
 Choose the target type from the real feature's behavior and the user's preference:
 
 - **Single-turn target:** every Spikee call is independent.
-- **Multi-turn target:** Spikee can preserve or map conversation state across several messages.
+- **Multi-turn target:** later messages in the same Spikee session can be sent to the application with the earlier messages from that application conversation as context.
 
 The assessment objective does not decide the target type. Harmful-content, prompt-injection, data-access, and cross-tenant objectives can all be attempted with one prompt or through a multi-turn attack. Do not claim that an objective inherently needs multi-turn, rapport building, escalation, or a “more powerful” approach unless the user explicitly defined such a scenario.
 
 A dataset entry is normally one input. Sending it through a multi-turn-capable target does not turn it into a conversation. A multi-turn attack such as `crescendo`, `echo_chamber`, or `multi_turn` creates and manages the additional turns.
 
-- Chatbot with usable history: ask whether to preserve it; recommend multi-turn because the feature supports it. Explain that single-turn treats prompts independently.
-- Stateless feature: recommend single-turn with evidence. Unknown conversation behavior: ask for evidence; do not assume statelessness.
+- Chatbot where the user can send several messages in the same ongoing conversation: recommend a multi-turn target by default. Map the same `spikee_session_id` to the same application conversation. When no session ID is supplied, start a new application conversation. Ask only if the user wants a different mode.
+- Stateless feature: recommend single-turn from the observed request and session contract. Unknown conversation behavior: resolve it before choosing the mode.
 - Include turn mode in the design gate, not a separate approval round. Implement only the agreed mode unless design is explicitly delegated.
 
-Ask only for details that remain unknown:
+Keep these two questions separate: whether the application stores earlier messages, and whether it sends them to the model on later turns. A reply that ignores or denies an earlier message proves neither. Establish the application's request and session behavior, then use a harmless follow-up whose answer clearly depends on the earlier turn.
+
+Propose the target in a short paragraph, without code previews unless requested: how Spikee input reaches the feature, which surrounding content stays fixed, how replies are returned, and whether conversation state is retained. Ask only for choices that remain open. If the user asks for a proposal only or says not to build it, give the proposal and stop without asking for build approval. A proposal normally needs no implementation-template or framework-source reads beyond this turn-mode guidance. Do not inspect or report model lists, guardrail configuration, quotas, unrelated endpoints, or routine checks during target-only mapping unless one changes the request contract needed by the target. Once agreed, report changes without repeating the whole proposal.
+
+Use the following as an internal discovery checklist. Inspect what you can; ask only unresolved questions that affect the design, at most three at a time:
 
 | # | Question | Drives |
 |---|---|---|
-| 1 | Should Spikee preserve the feature's real conversation history, or treat every call independently? | Base class |
+| 1 | Do later messages in one application conversation receive its earlier messages as context, and should Spikee preserve that context? | Base class |
 | 2 | Which request carries the prompt/document to the selected AI feature, and is it HTTP or WebSocket? | Transport pattern |
 | 3 | Where in the response body is the reply text? | Response parsing |
 | 4 | How does it authenticate? (API key / cookie / OAuth2 / IMDS / GCP ADC / JWT) | Auth pattern |
 | 5 | Session/thread/conversation ID — how is a new one created? | Multi-turn session management |
 | 6 | Any non-standard headers? (`X-Project-Id`, `Auth0-Client`, `x-*`, `Origin`, etc.) | Request headers |
-| 7 | How does it signal a block? (HTTP status, JSON flag, specific reply string) | `GuardrailTrigger` |
-| 8 | Runtime variants to test? (model, env, guardrail on/off) | `target_options` |
-| 9 | Route through intercepting proxy? | `proxy=` option |
+| 7 | Does the application return an explicit block signal, such as an HTTP status or JSON flag? | `GuardrailTrigger` |
+| 8 | Route through intercepting proxy? | `proxy=` option |
 
 > **Advanced Targets:** If the application requires complex authentication (Azure IMDS, GCP ADC, Auth0, JWT) or non-standard transport (WebSockets, tRPC, Multipart), refer to **`02b-advanced-targets.md`**.
 
@@ -80,18 +73,18 @@ Ask only for details that remain unknown:
 - Propose Playwright transport inside a normal custom target only when rendered UI/browser-managed state is required. It is not built into Spikee; ask before installing it and browser dependencies in the selected environment.
 - Derive selectors/UI steps from the live app or supplied evidence; never invent them.
 - Concurrent execution must be thread-safe. Inspect shared mutable state/resources for races or cross-session interference; sharing alone proves neither.
-- Playwright can run concurrent browser sessions. Report concurrency constraints only with implementation/observed evidence, not from browser use alone; agree threads under Phase 4.
+- Playwright can run concurrent browser sessions. Report concurrency constraints only with implementation/observed evidence, not from browser use alone. Do not fetch quotas or ask about thread counts while designing the target unless the target cannot be implemented without that fact; agree run volume and threads under Phase 4.
 
-Implement only the requests required to submit content, maintain the selected feature's session when applicable, and extract its AI response. Supporting authentication or session calls may be included because the feature needs them; they are not separate pentest targets.
+Implement only the requests required to submit content, maintain the selected feature's session when applicable, and extract its AI response. Once the interface is mapped, verify one harmless single-turn call or two messages for multi-turn state; do not repeat successful probes without a concrete unresolved question. Use only the harmless behavior agreed for target verification. Do not add an off-topic, refusal, injection, access-control, or other adversarial probe unless the user requested it. Supporting authentication or session calls may be included because the feature needs them; they are not separate pentest targets.
 
 - Direct/browser interactions here are for interface mapping and benign, non-destructive verification only; no requests for sensitive data or external actions.
 - Execute jailbreaks, prompt injections, and other adversarial payloads through agreed datasets/attacks via Phase 4's `spikee test`, unless the user explicitly requests a separately logged manual deviation.
 
 ### Credentials and Secrets
 
-Never hardcode API keys, bearer tokens, passwords, cookies, client secrets, or other credential material in a target, example, or `target_options`. Put secrets in the workspace `.env`, read them with `os.getenv()`, and fail clearly when a required value is missing. Keep only non-secret configuration, such as an endpoint URL or model name, in target options.
+Never hardcode API keys, bearer tokens, passwords, cookies, client secrets, or other credential material in a target, example, or `target_options`. Use the credential source the user or environment already supplied; do not ask them to choose another storage method unless that source is unavailable or blocked by the active policy. Some coding environments protect `.env` and similar files from both reading and writing. Follow the active policy: use the file normally when protection is disabled; when it is blocked, use already loaded environment variables or another configured credential source, or ask the user where the runtime should obtain the values. Do not use escalation to bypass a file-protection policy. For variables already loaded from `.env` or another provider, read with `os.getenv()` and fail clearly when a required value is missing. Do not demand a second copy of already usable credentials. Keep only non-secret configuration, such as an endpoint URL or model name, in target options.
 
-If a captured request contains credentials, use only the header/cookie names and authentication pattern when building the target; do not copy the secret values into source code. Ask the user to add the required values to `.env` themselves.
+If a captured request contains credentials, use only the header/cookie names and authentication pattern when building the target; do not copy the secret values into source code. If no usable credential source is configured, ask where the runtime should obtain the values; do not assume `.env` is accessible.
 
 ```python
 import os
@@ -99,7 +92,7 @@ import os
 def require_secret(name: str) -> str:
     value = os.getenv(name)
     if not value:
-        raise RuntimeError(f"Set {name} in the workspace .env")
+        raise RuntimeError(f"Set {name} in the target's environment")
     return value
 ```
 
@@ -120,229 +113,11 @@ spikee test --dataset datasets/my-dataset.jsonl \
             --threads <agreed-n>
 ```
 
-## 2.3 Single-Turn Target (Most Common)
+## 2.3 Implement the Approved Design
 
-Create a file in `targets/` in your workspace. Extend the `Target` base class.
+After the target design is approved, read [target implementation examples](02c-target-implementation.md). Read [advanced authentication and transports](02b-advanced-targets.md) only when the observed application requires them. Do not load implementation references for a proposal-only request.
 
-> Start with `targets/sample_target.py` for Spikee structure only. Discard its application-specific literals. If the guide and structural example leave a Spikee contract question unanswered, read `spikee-src/docs/06_custom_targets.md`, then the smallest relevant template source only if necessary.
-
-The URL, request body, response field, and status handling below are illustrative. Replace them only with behavior established from the real application; never leave the fictional mapping in a completed target.
-
-```python
-# targets/my_app_target.py
-from spikee.templates.target import Target
-from spikee.tester import GuardrailTrigger, RetryableError
-from spikee.utilities.hinting import Content, TargetResponseHint, ModuleDescriptionHint, ModuleOptionsHint
-from spikee.utilities.enums import ModuleTag
-from typing import Optional
-import requests
-
-class MyAppTarget(Target):
-    """Target for testing my LLM application."""
-
-    def get_description(self) -> ModuleDescriptionHint:
-        """Return (tags, description). Tags indicate single/multi-turn support."""
-        return [ModuleTag.SINGLE], "My custom application target"
-
-    def get_available_option_values(self) -> ModuleOptionsHint:
-        """Return (options_list, requires_llm).
-        First option in list is the default. Set requires_llm=True if target needs an LLM provider.
-        """
-        return ["url=https://my-app.example/api/chat"], False
-
-    def process_input(
-        self,
-        input_text: Content,
-        system_message: Optional[Content] = None,
-        target_options: Optional[str] = None,
-    ) -> TargetResponseHint:
-        """Send the prompt to your application and return the response.
-
-        Args:
-            input_text: The attack prompt (user message).
-            system_message: Optional system prompt (if dataset uses --include-system-message).
-            target_options: Value from --target-options CLI flag.
-
-        Returns:
-            str: The application's text response.
-            bool: For guardrail targets — True=allowed/bypassed, False=blocked.
-
-        Raises:
-            GuardrailTrigger: When the application's guardrail blocks the request.
-            RetryableError: For transient errors (429, timeouts) — Spikee will retry.
-            Exception: For fatal errors — Spikee logs and moves on.
-        """
-        # Parse options if needed
-        from spikee.utilities.modules import parse_options
-        opts = parse_options(target_options)
-        url = opts.get("url", "https://my-app.example/api/chat")
-        
-        # Proxy handling for Burp Suite
-        proxy_host = opts.get("proxy")
-        proxies = {"http": f"http://{proxy_host}", "https": f"http://{proxy_host}"} if proxy_host else {}
-
-        try:
-            response = requests.post(
-                url, 
-                json={"message": str(input_text)}, 
-                proxies=proxies, 
-                verify=not bool(proxy_host),
-                timeout=30
-            )
-            response.raise_for_status()
-            return response.json()["reply"]
-
-        except requests.exceptions.HTTPError as e:
-            if response.status_code == 429:
-                raise RetryableError(f"Rate limited: {e}", retry_period=60)
-            elif response.status_code == 400:
-                raise GuardrailTrigger(f"Guardrail triggered: {e}")
-            else:
-                raise
-
-```
-
-## 2.4 Multi-Turn Target
-
-For applications that maintain conversation state. This capability allows multi-turn attacks, but ordinary dataset entries remain single inputs unless such an attack is selected. Spikee provides two base classes:
-
-### Option A: SimpleMultiTarget (Recommended)
-
-The simpler approach — manages a local conversation history for you. Best when the application is stateless and you pass the full conversation each time.
-
-> Start with `targets/simple_test_chatbot.py` for the `SimpleMultiTarget` structure only. Its application identity, URLs, routes, schemas, and authentication are not evidence about the real target. Use the custom-target docs, then template source, only for a remaining Spikee contract or debugging question.
-
-```python
-# targets/my_chatbot_target.py
-from spikee.templates.simple_multi_target import SimpleMultiTarget
-from spikee.tester import GuardrailTrigger
-from spikee.utilities.hinting import Content, TargetResponseHint, ModuleDescriptionHint, ModuleOptionsHint
-from spikee.utilities.enums import ModuleTag
-from typing import Optional
-
-class MyChatbotTarget(SimpleMultiTarget):
-    """Multi-turn target using SimpleMultiTarget."""
-
-    def get_description(self) -> ModuleDescriptionHint:
-        return [ModuleTag.MULTI], "Multi-turn chatbot target"
-
-    def get_available_option_values(self) -> ModuleOptionsHint:
-        return [], False
-
-    def _call_application(self, messages, target_options):
-        """Implement from the application's captured request and response."""
-        raise NotImplementedError("Map this method to the real application; do not guess")
-
-    def process_input(
-        self,
-        input_text: Content,
-        system_message: Optional[Content] = None,
-        target_options: Optional[str] = None,
-        spikee_session_id: Optional[str] = None,
-        backtrack: bool = False,
-    ) -> TargetResponseHint:
-        # SimpleMultiTarget manages conversation history via spikee_session_id
-        # backtrack=True removes the last turn (used by attacks to try alternatives)
-
-        # Get or create conversation history for this session
-        history = self._get_target_data(spikee_session_id)
-        if history is None:
-            history = []
-
-        if backtrack and len(history) >= 2:
-            history = history[:-2]  # Remove last user+assistant pair
-
-        # Add the new user message
-        history.append({"role": "user", "content": str(input_text)})
-
-        # Call the real application using the verified HTTP/WebSocket/browser mapping.
-        messages = history.copy()
-        if system_message:
-            messages.insert(0, {"role": "system", "content": str(system_message)})
-
-        response = self._call_application(messages, target_options)
-        history.append({"role": "assistant", "content": response})
-
-        # Save conversation state
-        self._update_target_data(spikee_session_id, history)
-
-        return response
-```
-
-### Option B: MultiTarget
-
-For applications with server-side session management (e.g., the app tracks conversations via its own session ID).
-
-> Start with the initialized workspace's chatbot target examples and `spikee-src/docs/06_custom_targets.md`. Inspect `spikee-src/spikee/templates/multi_target.py` only for an unresolved base-class contract or debugging issue.
-
-The key difference: you must manage mapping between Spikee's `spikee_session_id` and your application's session identifier.
-
-## 2.5 Guardrail Target
-
-For testing guardrails and content filters. Return `True` if the prompt was **allowed** (bypassed), `False` if **blocked**.
-
-```python
-# targets/my_guardrail_target.py
-from spikee.templates.target import Target
-from spikee.utilities.hinting import Content, TargetResponseHint, ModuleDescriptionHint, ModuleOptionsHint
-from spikee.utilities.enums import ModuleTag
-from typing import Optional
-
-class MyGuardrailTarget(Target):
-    def get_description(self) -> ModuleDescriptionHint:
-        return [ModuleTag.SINGLE], "Guardrail target"
-
-    def get_available_option_values(self) -> ModuleOptionsHint:
-        return [], False
-
-    def process_input(
-        self,
-        input_text: Content,
-        system_message: Optional[Content] = None,
-        target_options: Optional[str] = None,
-    ) -> TargetResponseHint:
-        result = call_my_guardrail(str(input_text))
-        # True = allowed/bypassed (attack success from Spikee's perspective)
-        # False = blocked (attack failure)
-        return result == "ALLOWED"
-```
-
-> For the full guardrail testing workflow (attack + benign datasets, false positive analysis), see Phase 5 and read `spikee-src/docs/10_guardrail_testing.md`.
-
-## 2.6 Target Options Parsing
-
-For complex options, use `parse_options` from spikee utilities:
-
-```python
-from spikee.utilities.modules import parse_options
-
-def process_input(self, input_text, system_message=None, target_options=None):
-    opts = parse_options(target_options)  # Returns dict from "key1=val1,key2=val2"
-    url = opts.get("url", "https://default.com/api")
-    model = opts.get("model", "gpt-4o")
-    # ...
-```
-
-Later, after the Phase 3 dataset gate, pass these options during the Phase 4 run inside the mandatory named attachable session from `04-testing.md`:
-
-```bash
-spikee test --dataset datasets/my-dataset.jsonl \
-            --target my_target \
-            --target-options "url=https://api.example.com,model=gpt-4o" \
-            --threads <agreed-n>
-```
-
-## 2.7 Error Handling Summary
-
-| Situation | What to do |
-|---|---|
-| Application responds normally | Return the response text (str) |
-| Application blocks the request (guardrail) | Raise `GuardrailTrigger("message")` |
-| Transient error (rate limit, timeout) | Raise `RetryableError("message", retry_period=60)` |
-| Fatal error | Raise any `Exception` — Spikee logs it and continues |
-| Guardrail boolean | Return `True` (allowed) or `False` (blocked) |
-
-## 2.8 Prove the Target Works
+## 2.4 Prove the Target Works
 
 Do not proceed to dataset design merely because the target imports. Verify it against the real application:
 
@@ -356,10 +131,11 @@ spikee debug module targets -m my_target -i "Hello"
 
 - Confirm a real, non-empty response parsed from the expected field.
 - Multi-turn: use the standalone harness for two harmless messages with the same session ID; verify the second response reflects the first turn. This proves integration, not security.
+- If the target advertises `backtrack=True`, also exercise `process_input(..., backtrack=True)` after ordinary turns and verify the application state is the intended earlier conversation. If the application cannot reliably restore or replay that state, advertise `backtrack=False`; normal multi-turn support does not prove backtracking support.
 - Unresolved connectivity, authentication, parsing, selectors, or session behavior: stay in Phase 2 and request missing evidence; do not create a dataset.
 
 After learning material scope/interface facts, changing the target, or live verification, update the `spikee.log` summary and add one concise target activity entry: sanitized scope, target path, target type/turn mode/transport, safe request/response/session facts learned, `.env` variable names, verification command if run, observed outcome, and next gate. Do not copy captured requests, credentials, or response bodies into the log.
 
-## 2.9 Next Step
+## 2.5 Next Step
 
 Once the target passes live verification, summarize what was proven and propose **Phase 3** to design the dataset and judge. Apply the [phase handoff gate](SKILL.md#collaboration-and-phase-gates): wait for agreement unless explicit autopilot covers the transition. A working target alone does not authorize dataset creation.

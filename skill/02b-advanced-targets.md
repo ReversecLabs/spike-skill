@@ -8,7 +8,7 @@ These patterns may support only the selected LLM-powered feature's input/output 
 
 All hosts, routes, headers, schemas, and authentication details in this guide are illustrative. Never treat them as facts about the real application, probe them because they resemble the target, or use them to identify an upstream project. External repository/source lookup requires the user to supply it or explicitly approve the exact proposed lookup.
 
-Never hardcode API keys, access or refresh tokens, passwords, cookies, or client secrets in target code. Put them in the workspace `.env` (which must not be committed), read them with `os.getenv`, and fail with a clear error when a required value is missing. Non-secret configuration such as illustrative endpoint URLs may remain in code.
+Never hardcode API keys, access or refresh tokens, passwords, cookies, or client secrets in target code. Read them from the target's environment with `os.getenv`, and fail clearly when a required value is missing. The values may come from an accessible workspace `.env`, inherited variables or the environment's credential service. Respect protected paths; do not use escalation to bypass them. Non-secret configuration such as illustrative endpoint URLs may remain in code.
 
 ## 1. Advanced Authentication Patterns
 
@@ -54,7 +54,7 @@ Call in `__init__`, refresh on `401`.
 
 ### 1.3 Auth0 / OAuth2 Refresh Token
 
-Short-lived access tokens (~300 s) can be refreshed from a long-lived refresh token. Extract the request shape from a captured auth request, but store its credential values—including the initial `refresh_token` and any client secret—in the workspace `.env`, never in source code.
+Short-lived access tokens (~300 s) can be refreshed from a long-lived refresh token. Extract the request shape from a captured auth request, but supply its credential values—including the initial `refresh_token` and any client secret—through the agreed environment configuration, never in source code.
 
 > **Auth0 rotates the refresh token on every use** — always capture `refresh_token` from the response or the next call will fail.
 
@@ -66,12 +66,12 @@ from dotenv import load_dotenv
 from typing import Optional
 from spikee.templates.target import Target
 
-load_dotenv()  # workspace .env
+load_dotenv()  # when an accessible workspace .env is the agreed source
 
 def required_env(name: str) -> str:
     value = os.getenv(name)
     if not value:
-        raise RuntimeError(f"Missing {name}; set it in the workspace .env")
+        raise RuntimeError(f"Missing {name} in the target's environment")
     return value
 
 AUTH0_TOKEN_URL = "https://auth.example.com/oauth/token"  # non-secret
@@ -172,7 +172,7 @@ response = requests.post(url,
     timeout=30)
 ```
 
-### 2.3 Streaming (NDJSON / SSE)
+### 2.3 Streaming (NDJSON)
 
 ```python
 answer = ""
@@ -183,9 +183,11 @@ for line in response.text.strip().split("\n"):
             answer += chunk["content"]
 ```
 
+For SSE, parse complete events separated by blank lines, join their `data:` lines, and decode those payloads as JSON when the application uses JSON. Handle its end-of-stream marker (often `[DONE]`) separately. The NDJSON loop above does not parse SSE. Map the content field from observed replies.
+
 ### 2.4 WebSocket (async)
 
-If the connection requires cookies, read them from the workspace `.env` with `required_env("TARGET_COOKIES")`; never paste a captured cookie into the target.
+If the connection requires cookies, read them from the target's environment with `required_env("TARGET_COOKIES")`; never paste a captured cookie into the target.
 
 ```python
 import asyncio
@@ -211,13 +213,15 @@ def process_input(self, input_text, system_message=None, target_options=None):
 
 ### 2.5 WebSocket (sync, websocket-client)
 
+This fragment assumes `url`, `payload` and `ca_bundle_path` come from your connection configuration. Use the CA bundle that validates the server or intercepting proxy.
+
 ```python
 import websocket
 import json
 import ssl
 
 ws = websocket.create_connection(url, http_proxy_host="127.0.0.1",
-     http_proxy_port=8080, sslopt={"cert_reqs": ssl.CERT_NONE})
+     http_proxy_port=8080, sslopt={"cert_reqs": ssl.CERT_REQUIRED, "ca_certs": ca_bundle_path})
 ws.send(json.dumps(payload))
 response = ws.recv()
 ws.close()

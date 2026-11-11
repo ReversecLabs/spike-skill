@@ -15,13 +15,14 @@ This guide, `spikee list attacks -d`, and examples in the initialized workspace 
 
 Verify applicable items before every `spikee test`, including retries. Reuse current evidence and agreed decisions; use compact script summaries and targeted reads, not the entire dataset in the LLM's context. Follow the linked section when unsure and resolve mismatches before execution.
 
-- [ ] Correct workspace, [selected environment](01-workspace-setup.md#11-choose-the-python-environment), target, and target options selected; relevant [target verification](02-custom-targets.md#28-prove-the-target-works) remains valid.
+- [ ] Correct workspace, [selected environment](01-workspace-setup.md#11-choose-the-python-environment), target, and target options selected; relevant [target verification](02-custom-targets.md#24-prove-the-target-works) remains valid.
 - [ ] Exact [dataset paths](#41-basic-test-command) resolved; globs do not unintentionally include older datasets.
 - [ ] Optional `--tag` is meaningful and concise; check the [complete result filename length](#result-filename-length), especially with long dataset names or target options.
 - [ ] For `spikee test --attack`, prefer the attack name as the tag (e.g. `--attack goat --tag goat` or `--attack crescendo --tag crescendo`) to distinguish attack runs; retain an existing meaningful user-chosen tag.
 - [ ] Compact judge/criteria counts match the intended configuration. [`--judge-options`](#43-judges--how-success-is-determined) configures the backend—it does not select the judge.
 - [ ] A few representative inputs confirm [application-appropriate base inputs](03-dataset-generation.md#match-base-inputs-to-the-application), intended [composition](03-dataset-generation.md#32-how-composable-datasets-work), and [transformations](03-dataset-generation.md#35-dataset-generation-options); count/category summaries show expected coverage.
 - [ ] [Target](#41-basic-test-command), [judge](#43-judges--how-success-is-determined), and [attack-model](#44-dynamic-attacks) settings use their respective options; required modules and credentials are available.
+- [ ] If the target exposes model, environment or guardrail variants, the selected variant and its target options are agreed for this run.
 - [ ] [Baseline or attack mode](#required-testing-sequence) matches the task; multi-turn attacks have a verified compatible target.
 - [ ] [`--attack-only`](#attack-only-mode) has a trustworthy matching baseline recorded.
 - [ ] Selected count, sampling, attempts, attack iterations, retries, and concurrency match the [agreed workload](#concise-workload-approval-before-each-test).
@@ -38,17 +39,19 @@ Verify applicable items before every `spikee test`, including retries. Reuse cur
 
 Apply the [collaboration and delegation rules](SKILL.md#collaboration-and-phase-gates) to approval questions below. Reuse explicit authorization or scoped autopilot instead of asking again; always preview the command and workload, and stop for unresolved limits outside the delegation. Passing a baseline does not itself authorize scaling or adding attacks.
 
-Before execution, show the fully resolved test command without placeholders or secrets and propose a unique session such as `spikee-baseline-20260904-143000`. Ask: **“Would you like to run this command yourself, or should I run it in tmux session `<name>`?”**
+Before execution, show the fully resolved test command without placeholders or secrets and propose a unique session such as `spikee-baseline-20260904-143000`. Ask who runs it only if that is not already decided. An explicit request to run authorizes agent execution within the agreed workload.
 
 - If the user will run it, wait for their result.
 - For agent execution, create an empty session in the workspace and set `tmux set-window-option -t <name> remain-on-exit on` before launch. Show the resolved `tmux attach-session -t <name>` in its own fenced `bash` code block, then start the confirmed command inside it. Do not start before sending the attach command.
-- Inspect startup promptly with `tmux capture-pane`, then check periodically until exit. Watch for tracebacks, `File name too long`, resume prompts, repeated request/judge errors, and stalled progress. Inspect pane/process status and the actual exit status; a retained pane or existing result file alone does not prove success. Report failures promptly, record the observed outcome in `spikee.log`, and resolve the cause before retrying under the existing authorization rules.
+- Capture the test exit code in the retained pane (for example, append `; spikee_status=$?; printf "SPIKEE_EXIT=%s\n" "$spikee_status"` to the test command). Inspect startup promptly with `tmux capture-pane`, then check periodically until exit. Watch for tracebacks, `File name too long`, resume prompts, repeated request/judge errors, and stalled progress. Inspect pane/process status and the actual exit status; a retained pane or existing result file alone does not prove success. Report failures promptly, record the observed outcome in `spikee.log`, and resolve the cause before retrying under the existing authorization rules.
 - Only an explicit run-and-forget request waives continued monitoring. Still check startup, report the observed state and attach command, and record the monitoring waiver with status `running` or `failed` as observed; do not claim completion without evidence. This waiver does not waive tmux.
 - Whether the test succeeds or fails, leave the session and final pane output available for inspection. Never attach automatic `kill-session`, `kill-window`, or `kill-pane` cleanup to the command. Remove the session only after the user explicitly asks or confirms inspection is finished.
 - If tmux is unavailable, stop and offer installation or an attachable equivalent. Never substitute foreground execution, `&`, or `nohup`.
 - Only the user's explicit no-session instruction waives tmux for that test. A confirmation waiver, urgency, or a short run does not.
 
-Other Spikee commands run normally without tmux.
+Tmux uses Unix sockets. If the shell sandbox blocks them, use the environment's escalation tool for all tmux operations. If a socket is selected, include it in creation, launch, monitoring and the printed attach command.
+
+Other Spikee commands run normally without tmux. If the ordinary shell is intentionally network-isolated and a Spikee command needs network access, use the environment's approved escalation tool for that command rather than retrying it in the isolated shell.
 
 During monitoring, follow the [user-facing style rules](SKILL.md#user-facing-brevity-and-evidence): report observed progress, judge verdict counts, and material errors concisely. Label partial results as partial; do not add reactions or commentary about waiting.
 
@@ -60,7 +63,7 @@ Do not skip ahead when a gate is unresolved:
 2. Check `spikee.log` and results for a matching baseline: same application state, target/options, entries, and judge semantics.
 3. Count selected entries and calculate the workload ceiling and provider-call estimate.
 4. Present one approval block with the exact command and execution choice.
-5. If no matching baseline exists, run a static smoke baseline without `--attack`; fix errors before scaling.
+5. If no matching baseline exists, run the agreed static baseline without `--attack`; use only an explicitly agreed sample and fix errors before additional testing.
 6. Add a relevant dynamic attack only after execution is sound. Use `--attack-only` when a recorded matching baseline makes repeated direct attempts unnecessary.
 
 Example smoke baseline:
@@ -283,7 +286,7 @@ spikee test --dataset datasets/my-dataset.jsonl \
 
 > List available attacks: `spikee list attacks -d`
 > If this guide and the list output are insufficient, read `spikee-src/docs/08_dynamic_attacks.md`. Inspect `spikee-src/spikee/templates/attack.py` only when implementing a custom attack and the documented contract remains unclear, or when debugging.
-> **Advanced:** To configure a custom GOAT (Generative Offensive Adversarial Toolkit) attack with specific guardrail mapping, refer to **`04b-goat-attack.md`**.
+> **Advanced:** To configure a custom GOAT (Generative Offensive Agent Tester) attack with specific guardrail mapping, refer to **`04b-goat-attack.md`**.
 
 ### Attack-Only Mode
 
@@ -330,44 +333,34 @@ spikee test --dataset datasets/my-dataset.jsonl --target my_target --no-auto-res
 Create custom modules in your workspace's `attacks/` directory. Return `(attempts_used, success, input, response)`; for single-turn history, collect records in the attack loop and attach them using `Attack.standardised_input_return(..., attempt_history=history)`, as below. Existing modules can omit history.
 
 ```python
+from contextlib import nullcontext
 from spikee.templates.attack import Attack
 from spikee.utilities.attack import attack_history_enabled
 
 
-def attack(entry, target_module, call_judge, max_iterations,
-           attempts_bar=None, bar_lock=None, attack_options=None):
-    history = [] if attack_history_enabled() else None
-    count, success = 0, False
-    last_input, last_response = "", ""
-    for count in range(1, max_iterations + 1):
-        last_input = f"{entry['content']} — variant {count}"
-        last_response = ""
-        error = None
-        try:
+class ExampleAttack(Attack):
+    def attack(self, entry, target_module, call_judge, max_iterations,
+               attempts_bar=None, bar_lock=None, attack_options=None):
+        history = [] if attack_history_enabled() else None
+        count, success = 0, False
+        last_input, last_response = "", ""
+        for count in range(1, max_iterations + 1):
+            last_input = f"{entry['content']} — variant {count}"
+            # Replace this illustrative transformation with your technique.
+            # Let target/judge errors propagate; they are not negative verdicts.
             last_response, _ = target_module.process_input(last_input)
             success = call_judge(entry, last_response)
-        except Exception as exc:
-            success, error = False, str(exc)
-        if history is not None:
-            record = {
-                "input": last_input,
-                "response": last_response,
-                "success": None if error is not None else success,
-            }
-            if error is not None:
-                record["error"] = error
-            history.append(record)
-        if attempts_bar is not None:
-            with bar_lock:
-                attempts_bar.update(1)
-        if success:
-            break
-    return (
-        count,
-        success,
-        Attack.standardised_input_return(last_input, attempt_history=history),
-        last_response,
-    )
+            if history is not None:
+                history.append({"input": last_input, "response": last_response,
+                                "success": success})
+            if attempts_bar is not None:
+                with bar_lock if bar_lock is not None else nullcontext():
+                    attempts_bar.update(1)
+            if success:
+                break
+        return (count, success,
+                self.standardised_input_return(last_input, attempt_history=history),
+                last_response)
 ```
 
 > Start with `attacks/sample_attack.py` in the initialized workspace and the official dynamic-attack guide. Inspect built-in attack source only if a concrete implementation question remains or observed behavior needs debugging.
@@ -384,6 +377,6 @@ The module calls the supplied `target_module.process_input(...)` through the Spi
 
 ## 4.8 Next Step
 
-- On completion, report execution status and exact result path; propose **Phase 5** under the [phase handoff gate](SKILL.md#collaboration-and-phase-gates). Wait unless analysis was explicitly requested or autopilot covers it.
-- Once authorized, read `05-results-analysis.md`; first run `spikee results analyze --result-file <exact-result-path>` without tmux and present its overview.
+- On completion, report execution status and exact result path, then analyse the requested run. New runs or changed coverage need their own agreed scope.
+- Read `05-results-analysis.md`; first run `spikee results analyze --result-file <exact-result-path>` without tmux and present its overview.
 - Then use scripts/direct JSONL inspection for specific questions, debugging, or analysis unavailable through the built-in command.

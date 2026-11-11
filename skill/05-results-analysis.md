@@ -11,7 +11,7 @@ Any new or repeated `spikee test` proposed during analysis is Phase 4 work and m
 ## Built-In Analysis First; JSONL When Useful
 
 - For a completed-run summary, first run `spikee results analyze` without tmux on the exact intended result file; do not rebuild aggregates first.
-- Capture console output; report key figures, material errors/limitations, and exact path briefly. “Analysis completed” alone is insufficient. Show full output/breakdowns only when requested or needed to explain a finding.
+- Capture console output. By default, report successes/total and errors, the result path, and a material issue or next decision if there is one. Keep fixture details, review procedure and full breakdowns in the workspace record; explain them when asked. Do not repeat setup, agreed criteria or obvious limitations. “Analysis completed” alone is insufficient.
 
 The CLI subcommand is `analyze` (American spelling): `spikee results analyze`. There is no `spikee results --analyse` form in this bundled version.
 
@@ -25,7 +25,7 @@ If `spikee results analyze` fails or cannot parse an artifact, report that failu
 
 ## Analysis Gate and Workflow Routing
 
-Analyse the small static baseline before recommending a full or dynamic run. First verify that target responses are valid, judges executed as intended, errors are acceptably low, and the sample represents the relevant dataset categories. Do not treat an error-heavy or poorly covered run as evidence of safety or vulnerability.
+Analyse the agreed static baseline before recommending additional or dynamic testing. First verify that target responses are valid, judges executed as intended, errors are acceptably low, and the sample represents the relevant dataset categories. Do not treat an error-heavy or poorly covered run as evidence of safety or vulnerability.
 
 When the gate fails, explain the evidence and propose work in the owning phase below. Apply the [phase handoff gate](SKILL.md#collaboration-and-phase-gates) before making changes or repeating the baseline; do not automatically turn analysis into another run:
 
@@ -161,9 +161,9 @@ spikee results dataset-comparison \
     --success-definition gt
 ```
 
-This identifies entries that succeed against most targets (threshold > 80%) — these are the most dangerous attacks in your dataset.
+This selects entries successful against more than 80% of the tested targets. It measures frequency; assess impact from the application behaviour and the objective.
 
-To find entries that are hardest to exploit (succeed < 20% of the time):
+To find entries that succeeded against fewer than 20% of the tested targets:
 ```bash
 spikee results dataset-comparison \
     --dataset datasets/cybersec-2026-01-1234567800.jsonl \
@@ -225,7 +225,7 @@ spikee results convert-to-excel --result-file results/results_my_target_12345678
 
 ## 5.10 Iteration Guide
 
-Based on results, recommend next steps using the table below. These are proposals, not instructions to execute automatically. Present the findings, ask which follow-up the user wants, and wait unless explicit autopilot covers it. If no follow-up is requested, finish with the findings and leave the workspace ready to resume.
+Use the table below only when the result exposes a material unresolved problem or the user asks what to do next. These are proposals, not instructions to execute automatically. A completed requested run should finish with its findings; do not append offers to increase coverage, iterations, models or attack types. Leave the workspace ready to resume.
 
 | Observation | Action |
 |---|---|
